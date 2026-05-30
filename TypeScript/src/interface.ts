@@ -47,6 +47,8 @@ console.log(employee1);
 
 interface Add {
   (a: number, b: number): number;
+  // param er type and return type বলে দেওয়া হয়,
+  // এখানে আমরা বলছি যে এই ফাংশনটি দুইটি number নেবে এবং একটি number রিটার্ন করবে
 }
 
 const add: Add = (a, b) => a + b;
