@@ -62,13 +62,13 @@ TypeScript/
 
 ## 🧭 Learning Phases at a Glance
 
-| Phase | Level | Goal | Topics |
-|---|---|---|---|
-| **Phase 1** 🌱 | Beginner | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives, Functions, `?` Operators |
-| **Phase 2** 🌿 | Lower-Intermediate | Type modeling, reusability, contracts | Type Alias, Interface, Union & Intersection |
-| **Phase 2.5** 💡 | Intermediate | Advanced modeling + decision guides | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics, Utility Types |
-| **Phase 3** 🌳 | Intermediate | Safety patterns, pitfalls, real-world techniques | Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest |
-| **Phase 4** 🎯 | All levels | Revise + experiment | Practice challenges |
+| Phase            | Level              | Goal                                                  | Topics                                                                            |
+| ---------------- | ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives, Functions, `?` Operators                              |
+| **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias, Interface, Union & Intersection                                       |
+| **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics, Utility Types |
+| **Phase 3** 🌳   | Intermediate       | Safety patterns, pitfalls, real-world techniques      | Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest              |
+| **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                               |
 
 ---
 
@@ -460,6 +460,42 @@ console.log(discount || 10); // 10 — because 0 is falsy!
 // Use ?? when 0 is a valid value!
 ```
 
+### 🆚 `?.` vs `??` vs `||` vs `!` — Quick Decision
+
+All four look "null-related" but serve very different purposes:
+
+| Operator | Name               | Triggers on                                         | Safe?      | Use when...                                          |
+| -------- | ------------------ | --------------------------------------------------- | ---------- | ---------------------------------------------------- |
+| `?.`     | Optional chaining  | missing property/call                               | ✅ yes     | Accessing nested props that might not exist          |
+| `??`     | Nullish coalescing | `null` or `undefined` only                          | ✅ yes     | Fallback when value is explicitly absent             |
+| `\|\|`   | Logical OR         | any falsy (`0`, `""`, `false`, `null`, `undefined`) | ⚠️ careful | Fallback when ANY falsy value should use the default |
+| `!`      | Non-null assertion | nothing (compile-time only)                         | ❌ risky   | Telling TS "definitely not null" — you take the risk |
+
+```ts
+const user = {
+  score: 0,
+  address: undefined as { city: string } | undefined,
+};
+
+// ?. — safe access, returns undefined instead of crashing
+const city = user.address?.city; // undefined ✅
+
+// ?? — fallback only for null/undefined, 0 is NOT affected
+const score1 = user.score ?? 100; // 0   ✅ (0 is not null/undefined)
+const score2 = user.score || 100; // 100 ❌ BUG: 0 is falsy, fallback triggers!
+
+// Combining ?. and ??
+const label = user.address?.city ?? "Unknown City"; // "Unknown City" ✅
+
+// ! — non-null assertion, you promise TS it's not null
+const btn = document.getElementById("btn")!; // ❌ risky: crashes if element is absent
+```
+
+**`?.` ব্যবহার করুন যখন:** nested property access-এ crash ছাড়া `undefined` চান।
+**`??` ব্যবহার করুন যখন:** `null`/`undefined`-এর জন্য fallback দরকার কিন্তু `0` বা `""` valid value।
+**`||` ব্যবহার করুন যখন:** যেকোনো falsy value (খালি string, 0, false)-এর জন্য fallback দরকার।
+**`!` ব্যবহার করুন যখন:** আপনি ১০০% নিশ্চিত value টা `null`/`undefined` না।
+
 ---
 
 # 🌿 Phase 2 — Modeling & Composition
@@ -779,6 +815,7 @@ function getSides(shape: Shape): number {
 ---
 
 ## 8️⃣ 🆚 Type Alias vs Interface
+
 > **Level:** Intermediate 💡
 
 ### Concept | ধারণা
@@ -789,15 +826,15 @@ function getSides(shape: Shape): number {
 
 ### Feature Comparison Table | পার্থক্যের তালিকা
 
-| Feature | `interface` | `type` |
-|---|---|---|
-| Object shapes | ✅ | ✅ |
-| Primitive / union / tuple aliases | ❌ | ✅ |
-| `extends` (inheritance) | ✅ `interface B extends A` | ✅ `type B = A & { ... }` |
-| Declaration merging | ✅ (two `interface Foo {}` merge) | ❌ (duplicate = error) |
-| Computed property names | ❌ | ✅ |
-| Implements in classes | ✅ | ✅ |
-| Recommended for... | Object contracts, OOP, libraries | Unions, intersections, computed, primitives |
+| Feature                           | `interface`                       | `type`                                      |
+| --------------------------------- | --------------------------------- | ------------------------------------------- |
+| Object shapes                     | ✅                                | ✅                                          |
+| Primitive / union / tuple aliases | ❌                                | ✅                                          |
+| `extends` (inheritance)           | ✅ `interface B extends A`        | ✅ `type B = A & { ... }`                   |
+| Declaration merging               | ✅ (two `interface Foo {}` merge) | ❌ (duplicate = error)                      |
+| Computed property names           | ❌                                | ✅                                          |
+| Implements in classes             | ✅                                | ✅                                          |
+| Recommended for...                | Object contracts, OOP, libraries  | Unions, intersections, computed, primitives |
 
 ### Side-by-Side Code Example
 
@@ -855,12 +892,14 @@ type ApiResult<T> = {
 ### When to Use Which | কোনটা কখন ব্যবহার করবেন
 
 **Use `interface` when:**
+
 - Describing the shape of an **object or class**
 - You need **declaration merging** (e.g. augmenting global types)
 - Writing a **public API / library** (interfaces are more extendable)
 - You want `extends` for clean inheritance
 
 **`interface` ব্যবহার করুন যখন:**
+
 - Object বা class-এর shape describe করছেন
 - Declaration merging দরকার (যেমন global type augment)
 - Public API / library লিখছেন
@@ -869,6 +908,7 @@ type ApiResult<T> = {
 ---
 
 **Use `type` when:**
+
 - Defining **unions** (`"admin" | "user"`)
 - Defining **intersections** as a one-liner
 - Aliasing **primitives** (`type ID = string | number`)
@@ -876,6 +916,7 @@ type ApiResult<T> = {
 - Creating **tuple** type aliases
 
 **`type` ব্যবহার করুন যখন:**
+
 - Union define করছেন
 - Intersection one-liner হিসেবে করছেন
 - Primitive alias করছেন (`type ID = string | number`)
@@ -915,7 +956,11 @@ Decide: `type` or `interface` for each?
 ```ts
 // 1. A shape for a database row with id, name, createdAt
 // Answer: interface (object shape, likely extended)
-interface Row { id: number; name: string; createdAt: Date; }
+interface Row {
+  id: number;
+  name: string;
+  createdAt: Date;
+}
 
 // 2. A variable that can be a string or number
 // Answer: type (union)
@@ -927,28 +972,70 @@ type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 // 4. A shape you'll augment in multiple files
 // Answer: interface (declaration merging)
-interface AppConfig { theme: string; }
+interface AppConfig {
+  theme: string;
+}
 ```
+
+### 🆚 `interface extends` vs `type &` — Extending / Composing Types
+
+Both extend a shape — but they behave differently when properties conflict:
+
+|                            | `interface extends`                         | `type &` (intersection)                     |
+| -------------------------- | ------------------------------------------- | ------------------------------------------- |
+| Conflicting property types | ❌ Error at definition — caught immediately | ⚠️ Silently becomes `never` — hard to debug |
+| Multiple inheritance       | `interface C extends A, B { }`              | `type C = A & B & { }`                      |
+| Works with non-objects     | ❌ Interface only                           | ✅ Can intersect any types                  |
+| Readability                | ✅ Clear OOP inheritance intent             | ✅ Concise, great for one-liners            |
+
+```ts
+// interface extends — clean, conflicts caught at compile time
+interface Shape {
+  color: string;
+}
+interface Named {
+  name: string;
+}
+interface ColoredShape extends Shape, Named {
+  size: number;
+} // ✅
+
+// type & — property conflict silently becomes `never`
+type A = { id: string };
+type B = { id: number };
+type C = A & B;
+// C.id is: string & number = never  ← silent problem, no TS error at definition!
+
+// interface extends catches conflicts immediately:
+interface X {
+  id: string;
+}
+// interface Y extends X { id: number; } // ❌ Error: not assignable to type 'string'
+```
+
+**`interface extends` ব্যবহার করুন যখন:** OOP-style inheritance চান, property conflict ধরতে চান, বা multiple base type আছে।
+**`type &` ব্যবহার করুন যখন:** quick one-liner composition দরকার, বা type alias-এর সাথে compose করছেন।
 
 ---
 
 ## 9️⃣ Type Guards 🔍
+
 > **Level:** Intermediate 💡
 
 ### Concept | ধারণা
 
-**English:** A type guard is any expression that narrows a type at runtime. Instead of asserting `as string`, you *prove* to TypeScript what type you're dealing with — making your code safer and crash-free.
+**English:** A type guard is any expression that narrows a type at runtime. Instead of asserting `as string`, you _prove_ to TypeScript what type you're dealing with — making your code safer and crash-free.
 
-**বাংলা:** Type guard হলো এমন expression যা runtime-এ type narrow করে। `as string` দিয়ে assert করার বদলে TypeScript-কে *প্রমাণ* করে দেন — এতে code আরও safe হয় এবং crash হয় না।
+**বাংলা:** Type guard হলো এমন expression যা runtime-এ type narrow করে। `as string` দিয়ে assert করার বদলে TypeScript-কে _প্রমাণ_ করে দেন — এতে code আরও safe হয় এবং crash হয় না।
 
 ### Types of Guards | Guard-এর ধরন
 
-| Guard | Syntax | Use case |
-|---|---|---|
-| `typeof` | `typeof x === "string"` | Primitives |
-| `instanceof` | `x instanceof Date` | Class instances |
-| Custom `is` | `function isUser(x): x is User` | Object shapes |
-| `in` | `"name" in x` | Check property existence |
+| Guard        | Syntax                          | Use case                 |
+| ------------ | ------------------------------- | ------------------------ |
+| `typeof`     | `typeof x === "string"`         | Primitives               |
+| `instanceof` | `x instanceof Date`             | Class instances          |
+| Custom `is`  | `function isUser(x): x is User` | Object shapes            |
+| `in`         | `"name" in x`                   | Check property existence |
 
 ### Code Example
 
@@ -959,9 +1046,9 @@ function formatValue(value: string | number | boolean): string {
     return value.toUpperCase(); // TS knows: value is string here
   }
   if (typeof value === "number") {
-    return value.toFixed(2);    // TS knows: value is number here
+    return value.toFixed(2); // TS knows: value is number here
   }
-  return String(value);         // TS knows: value is boolean here
+  return String(value); // TS knows: value is boolean here
 }
 
 // instanceof guard — narrows class instances
@@ -969,7 +1056,7 @@ function formatDate(value: string | Date): string {
   if (value instanceof Date) {
     return value.toISOString(); // TS knows: value is Date here
   }
-  return value;                 // TS knows: value is string here
+  return value; // TS knows: value is string here
 }
 
 // Custom type guard with 'is' keyword
@@ -1003,11 +1090,13 @@ function describe(user: Admin | Guest): string {
 ### Explanation | ব্যাখ্যা
 
 **English:**
+
 - After a `typeof` / `instanceof` / `in` check, TypeScript **automatically narrows** the type inside the `if` block — you don't need `as`.
 - Custom `is` guards let you teach TypeScript about your own types.
 - Prefer guards over assertions (`as`) — guards are runtime-safe, assertions are not.
 
 **বাংলা:**
+
 - `typeof` / `instanceof` / `in` check-এর পরে `if` block-এর ভেতরে TypeScript **স্বয়ংক্রিয়ভাবে** type narrow করে — `as` লাগে না।
 - Custom `is` guard দিয়ে TypeScript-কে আপনার নিজের type সম্পর্কে শেখাতে পারেন।
 - Assertion (`as`) এর চেয়ে guard prefer করুন — guard runtime-safe, assertion নয়।
@@ -1057,6 +1146,7 @@ if (isString(input)) {
 ---
 
 ## 1️⃣0️⃣ Enums 🔢
+
 > **Level:** Intermediate 💡
 
 ### Concept | ধারণা
@@ -1070,9 +1160,9 @@ if (isString(input)) {
 ```ts
 // Numeric enum — values are 0, 1, 2, 3 by default
 enum Direction {
-  Up,    // 0
-  Down,  // 1
-  Left,  // 2
+  Up, // 0
+  Down, // 1
+  Left, // 2
   Right, // 3
 }
 
@@ -1082,15 +1172,15 @@ function move(dir: Direction): string {
   return "Moving sideways!";
 }
 
-console.log(move(Direction.Up));    // "Moving up!"
-console.log(Direction.Up);          // 0  ← the actual value
-console.log(Direction[0]);          // "Up"  ← reverse mapping
+console.log(move(Direction.Up)); // "Moving up!"
+console.log(Direction.Up); // 0  ← the actual value
+console.log(Direction[0]); // "Up"  ← reverse mapping
 
 // String enum — explicit values, no reverse mapping
 enum Status {
-  Active   = "ACTIVE",
+  Active = "ACTIVE",
   Inactive = "INACTIVE",
-  Banned   = "BANNED",
+  Banned = "BANNED",
 }
 
 function getLabel(status: Status): string {
@@ -1101,8 +1191,8 @@ console.log(getLabel(Status.Active)); // "User is: ACTIVE"
 
 // const enum — fully inlined at compile time (no JS object emitted)
 const enum HttpStatus {
-  OK        = 200,
-  NotFound  = 404,
+  OK = 200,
+  NotFound = 404,
   ServerError = 500,
 }
 
@@ -1112,12 +1202,14 @@ const code: HttpStatus = HttpStatus.OK; // compiles to: const code = 200;
 ### Explanation | ব্যাখ্যা
 
 **English:**
+
 - **Numeric enums** auto-increment from 0. You can access them forward (`Direction.Up → 0`) AND backward (`Direction[0] → "Up"`).
 - **String enums** are more readable in logs and serialized data. No reverse mapping.
 - **`const enum`** is inlined at compile time — no JS object is generated, so there's zero runtime overhead.
 - Many modern TS projects prefer a **union of string literals** over enums (e.g. `type Status = "ACTIVE" | "INACTIVE"`) — they're simpler and don't require an import.
 
 **বাংলা:**
+
 - **Numeric enum** 0 থেকে auto-increment হয়। Forward (`Direction.Up → 0`) এবং backward (`Direction[0] → "Up"`) দুভাবে access করা যায়।
 - **String enum** log এবং serialized data-তে বেশি readable। Reverse mapping নেই।
 - **`const enum`** compile time-এ inline হয় — কোনো JS object তৈরি হয় না, তাই runtime overhead শূন্য।
@@ -1146,16 +1238,16 @@ Create a string enum `Color` with values `Red = "RED"`, `Green = "GREEN"`, `Blue
 ```ts
 // Your answer:
 enum Color {
-  Red   = "RED",
+  Red = "RED",
   Green = "GREEN",
-  Blue  = "BLUE",
+  Blue = "BLUE",
 }
 
 function toHex(color: Color): string {
   const map: Record<Color, string> = {
-    [Color.Red]:   "#FF0000",
+    [Color.Red]: "#FF0000",
     [Color.Green]: "#00FF00",
-    [Color.Blue]:  "#0000FF",
+    [Color.Blue]: "#0000FF",
   };
   return map[color];
 }
@@ -1163,9 +1255,47 @@ function toHex(color: Color): string {
 console.log(toHex(Color.Red)); // "#FF0000"
 ```
 
+### 🆚 `enum` vs `const enum` vs String Literal Union — Which to Choose?
+
+|                           | `enum`                    | `const enum`            | String Literal Union         |
+| ------------------------- | ------------------------- | ----------------------- | ---------------------------- |
+| Generates JS object       | ✅ Yes                    | ❌ Fully inlined        | ❌ Type-only, erased         |
+| Runtime overhead          | Small                     | None                    | None                         |
+| Reverse mapping           | ✅ Numeric only           | ❌                      | ❌                           |
+| Plain string assignable   | ❌ Must use `Enum.Value`  | ❌                      | ✅ `"active"` works directly |
+| Safe across packages      | ✅                        | ⚠️ Avoid in `.d.ts`     | ✅                           |
+| **Best for new projects** | ⚠️ Legacy / numeric flags | ⚠️ Performance-critical | ✅ **Default choice**        |
+
+```ts
+// enum — generates a real JS object, must use Enum.Value
+enum Role {
+  Admin = "ADMIN",
+  User = "USER",
+}
+const r: Role = Role.Admin; // ✅
+// const r2: Role = "ADMIN"; // ❌ Not assignable to type 'Role'
+
+// const enum — fully inlined, zero JS output
+const enum Dir {
+  Up = "UP",
+  Down = "DOWN",
+}
+const d = Dir.Up; // compiles to: const d = "UP"
+
+// String literal union — simplest, most flexible, no import needed
+type Status = "active" | "inactive" | "banned";
+const s: Status = "active"; // ✅ plain string works
+// const s2: Status = "deleted"; // ❌ still type-safe
+```
+
+**`enum` ব্যবহার করুন যখন:** legacy codebase, numeric bit flags, বা runtime-এ enum object দরকার।
+**`const enum` ব্যবহার করুন যখন:** same package-এর ভেতরে performance-critical constants।
+**String literal union ব্যবহার করুন যখন:** নতুন TypeScript project-এ — সবচেয়ে simple, import লাগে না।
+
 ---
 
 ## 1️⃣1️⃣ `keyof` & `typeof` Operators 🗝️
+
 > **Level:** Intermediate 💡
 
 ### Concept | ধারণা
@@ -1193,8 +1323,8 @@ function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
 
 const user: User = { id: 1, name: "Alice", email: "alice@example.com" };
 
-const name = getProperty(user, "name");  // ✅ type: string
-const id   = getProperty(user, "id");    // ✅ type: number
+const name = getProperty(user, "name"); // ✅ type: string
+const id = getProperty(user, "id"); // ✅ type: number
 // getProperty(user, "age");             // ❌ Error: "age" not in User
 
 // typeof — capture the type of a value at type-level
@@ -1211,33 +1341,35 @@ type ConfigKey = keyof typeof config; // "theme" | "language" | "version"
 
 // Combining keyof + typeof — bridge runtime values to compile-time types
 const ROUTES = {
-  home:    "/",
-  about:   "/about",
+  home: "/",
+  about: "/about",
   contact: "/contact",
 } as const;
 
-type Route = typeof ROUTES[keyof typeof ROUTES]; // "/" | "/about" | "/contact"
+type Route = (typeof ROUTES)[keyof typeof ROUTES]; // "/" | "/about" | "/contact"
 
 function navigate(route: Route): void {
   console.log(`Navigating to ${route}`);
 }
 
-navigate("/about");    // ✅
-navigate("/unknown");  // ❌ Error: not a valid route
+navigate("/about"); // ✅
+navigate("/unknown"); // ❌ Error: not a valid route
 ```
 
 ### Explanation | ব্যাখ্যা
 
 **English:**
+
 - `keyof T` gives you a union of all property names of type `T` — great for type-safe property access functions.
 - `typeof value` gives you the TypeScript type of any value — great for deriving types from constants.
-- Combining `typeof ROUTES[keyof typeof ROUTES]` is a powerful pattern for extracting all *values* of an object as a union type.
+- Combining `typeof ROUTES[keyof typeof ROUTES]` is a powerful pattern for extracting all _values_ of an object as a union type.
 - `as const` makes all properties `readonly` and narrows string literals — essential for `typeof` to be useful.
 
 **বাংলা:**
+
 - `keyof T` type `T`-এর সব property name-এর union দেয় — type-safe property access function-এর জন্য দারুণ।
 - `typeof value` যেকোনো value-এর TypeScript type দেয় — constant থেকে type derive করার জন্য দারুণ।
-- `typeof ROUTES[keyof typeof ROUTES]` হলো object-এর সব *value*-এর union বের করার powerful pattern।
+- `typeof ROUTES[keyof typeof ROUTES]` হলো object-এর সব _value_-এর union বের করার powerful pattern।
 - `as const` সব property `readonly` করে এবং string literal narrow করে — `typeof`-কে useful করার জন্য এটা essential।
 
 ### ⚠️ Common Mistakes
@@ -1245,21 +1377,21 @@ navigate("/unknown");  // ❌ Error: not a valid route
 ```ts
 // ❌ Wrong: confusing typeof at runtime vs type-level
 const x = 42;
-console.log(typeof x);          // "number" ← runtime JS (string result)
-type T = typeof x;              // number   ← type-level TS (the type itself)
+console.log(typeof x); // "number" ← runtime JS (string result)
+type T = typeof x; // number   ← type-level TS (the type itself)
 
 // ❌ Wrong: keyof on a value instead of a type
 const user = { name: "Alice" };
-type K = keyof user;            // ❌ Error: 'user' refers to a value, not a type
-type K2 = keyof typeof user;    // ✅ Correct
+type K = keyof user; // ❌ Error: 'user' refers to a value, not a type
+type K2 = keyof typeof user; // ✅ Correct
 
 // ❌ Wrong: not using 'as const' — loses literal types
 const COLORS = { red: "RED", blue: "BLUE" };
-type Color = typeof COLORS[keyof typeof COLORS]; // string (too wide!)
+type Color = (typeof COLORS)[keyof typeof COLORS]; // string (too wide!)
 
 // ✅ Correct: use 'as const'
 const COLORS2 = { red: "RED", blue: "BLUE" } as const;
-type Color2 = typeof COLORS2[keyof typeof COLORS2]; // "RED" | "BLUE" ✅
+type Color2 = (typeof COLORS2)[keyof typeof COLORS2]; // "RED" | "BLUE" ✅
 ```
 
 ### ⚡ Quick Quiz
@@ -1270,13 +1402,14 @@ Given the object `const sizes = { sm: 8, md: 16, lg: 24 } as const`, write a typ
 // Your answer:
 const sizes = { sm: 8, md: 16, lg: 24 } as const;
 
-type SizeKey   = keyof typeof sizes;            // "sm" | "md" | "lg"
-type SizeValue = typeof sizes[keyof typeof sizes]; // 8 | 16 | 24
+type SizeKey = keyof typeof sizes; // "sm" | "md" | "lg"
+type SizeValue = (typeof sizes)[keyof typeof sizes]; // 8 | 16 | 24
 ```
 
 ---
 
 ## 1️⃣2️⃣ Generics 🧬
+
 > **File:** `src/generic.ts` | **Level:** Intermediate 💡
 
 ### Concept | ধারণা
@@ -1293,9 +1426,9 @@ function identity<T>(value: T): T {
   return value;
 }
 
-console.log(identity<string>("hello"));  // "hello" — T = string
-console.log(identity<number>(42));        // 42      — T = number
-console.log(identity(true));              // true    — T inferred as boolean
+console.log(identity<string>("hello")); // "hello" — T = string
+console.log(identity<number>(42)); // 42      — T = number
+console.log(identity(true)); // true    — T inferred as boolean
 
 // Generic function with multiple type params
 function pair<T, U>(first: T, second: U): [T, U] {
@@ -1325,34 +1458,36 @@ function logLength<T extends { length: number }>(value: T): T {
   return value;
 }
 
-logLength("hello");        // ✅ string has .length
-logLength([1, 2, 3]);      // ✅ array has .length
+logLength("hello"); // ✅ string has .length
+logLength([1, 2, 3]); // ✅ array has .length
 // logLength(42);          // ❌ Error: number has no .length
 
 // Generic type alias
 type Maybe<T> = T | null | undefined;
 
-const username: Maybe<string> = null;  // ✅
-const userId: Maybe<number>   = 42;    // ✅
+const username: Maybe<string> = null; // ✅
+const userId: Maybe<number> = 42; // ✅
 
 // Generic with default type
 interface Wrapper<T = string> {
   value: T;
 }
 
-const w1: Wrapper        = { value: "hello" };  // T defaults to string
-const w2: Wrapper<number> = { value: 99 };       // T = number
+const w1: Wrapper = { value: "hello" }; // T defaults to string
+const w2: Wrapper<number> = { value: 99 }; // T = number
 ```
 
 ### Explanation | ব্যাখ্যা
 
 **English:**
+
 - `<T>` is a **type parameter** — like a function parameter but for types.
 - TypeScript can often **infer** `T` from the argument — you don't always need to write `<string>` explicitly.
 - `T extends SomeType` **constrains** what `T` can be — great for ensuring the value has certain properties.
 - Generics are the right tool when you find yourself copy-pasting the same function with different types.
 
 **বাংলা:**
+
 - `<T>` হলো **type parameter** — function parameter-এর মতো, কিন্তু type-এর জন্য।
 - TypeScript প্রায়ই argument থেকে `T` **infer** করে নিতে পারে — সবসময় `<string>` লিখতে হয় না।
 - `T extends SomeType` দিয়ে `T` কী হতে পারে তা **constrain** করা যায় — value-এ নির্দিষ্ট property আছে কিনা নিশ্চিত করার জন্য দারুণ।
@@ -1398,14 +1533,15 @@ function getFirst<T>(arr: T[]): T | undefined {
   return arr[0];
 }
 
-console.log(getFirst([10, 20, 30]));      // 10 — T inferred as number
-console.log(getFirst(["a", "b", "c"]));  // "a" — T inferred as string
-console.log(getFirst([]));               // undefined
+console.log(getFirst([10, 20, 30])); // 10 — T inferred as number
+console.log(getFirst(["a", "b", "c"])); // "a" — T inferred as string
+console.log(getFirst([])); // undefined
 ```
 
 ---
 
 ## 1️⃣3️⃣ Utility Types 🛠️
+
 > **Level:** Intermediate 💡
 
 ### Concept | ধারণা
@@ -1416,17 +1552,17 @@ console.log(getFirst([]));               // undefined
 
 ### Most Important Utility Types | সবচেয়ে গুরুত্বপূর্ণ
 
-| Utility | What it does | উদাহরণ |
-|---|---|---|
-| `Partial<T>` | All properties become optional | Form drafts |
-| `Required<T>` | All properties become required | Validated records |
-| `Readonly<T>` | All properties become readonly | Immutable config |
-| `Pick<T, K>` | Keep only selected keys | Public-safe subset |
-| `Omit<T, K>` | Remove selected keys | Strip sensitive fields |
-| `Record<K, V>` | Map keys to values | Lookup tables |
-| `Exclude<T, U>` | Remove from a union | Filter union members |
-| `NonNullable<T>` | Remove null/undefined | Guaranteed values |
-| `ReturnType<F>` | Extract return type of a function | Infer from function |
+| Utility          | What it does                      | উদাহরণ                 |
+| ---------------- | --------------------------------- | ---------------------- |
+| `Partial<T>`     | All properties become optional    | Form drafts            |
+| `Required<T>`    | All properties become required    | Validated records      |
+| `Readonly<T>`    | All properties become readonly    | Immutable config       |
+| `Pick<T, K>`     | Keep only selected keys           | Public-safe subset     |
+| `Omit<T, K>`     | Remove selected keys              | Strip sensitive fields |
+| `Record<K, V>`   | Map keys to values                | Lookup tables          |
+| `Exclude<T, U>`  | Remove from a union               | Filter union members   |
+| `NonNullable<T>` | Remove null/undefined             | Guaranteed values      |
+| `ReturnType<F>`  | Extract return type of a function | Infer from function    |
 
 ### Code Example
 
@@ -1449,7 +1585,12 @@ type FullUser = Required<User>;
 
 // Readonly — prevent mutation
 type ImmutableUser = Readonly<User>;
-const frozen: ImmutableUser = { id: 1, name: "Alice", email: "a@b.com", password: "x" };
+const frozen: ImmutableUser = {
+  id: 1,
+  name: "Alice",
+  email: "a@b.com",
+  password: "x",
+};
 // frozen.name = "Bob"; // ❌ Error: cannot assign to readonly property
 
 // Pick — keep only certain fields (e.g. public profile)
@@ -1463,7 +1604,7 @@ const safeUser: SafeUser = { id: 1, name: "Alice", email: "a@b.com" };
 // Record — create a key-value map
 type RolePermissions = Record<"admin" | "editor" | "viewer", string[]>;
 const perms: RolePermissions = {
-  admin:  ["read", "write", "delete"],
+  admin: ["read", "write", "delete"],
   editor: ["read", "write"],
   viewer: ["read"],
 };
@@ -1488,11 +1629,13 @@ type CreatedUser = ReturnType<typeof createUser>;
 ### Explanation | ব্যাখ্যা
 
 **English:**
+
 - Utility types are all built on **generics and mapped types** internally.
 - `Partial` and `Omit` are especially common — use `Partial` for PATCH request bodies, `Omit` to strip sensitive fields before sending data to clients.
 - `ReturnType<typeof fn>` is gold when you want to type something based on what a function returns without duplicating the type definition.
 
 **বাংলা:**
+
 - Utility type-গুলো ভেতরে ভেতরে **generics এবং mapped type** দিয়ে তৈরি।
 - `Partial` এবং `Omit` সবচেয়ে বেশি ব্যবহৃত — PATCH request body-র জন্য `Partial`, client-এ data পাঠানোর আগে sensitive field বাদ দিতে `Omit`।
 - `ReturnType<typeof fn>` অত্যন্ত useful — function কী return করে তার উপর ভিত্তি করে type করতে চাইলে type definition duplicate করতে হয় না।
@@ -1522,16 +1665,76 @@ type Bad = Pick<User, "nickname">; // ❌ Error: "nickname" is not in User
 ### ⚡ Quick Quiz
 
 Given `type Product = { id: number; title: string; price: number; secret: string }`, create:
+
 1. A type with only `id` and `title`
 2. A type without `secret`
 3. A type where all fields are optional
 
 ```ts
 // Answers:
-type ProductPreview  = Pick<Product, "id" | "title">;
-type SafeProduct     = Omit<Product, "secret">;
-type DraftProduct    = Partial<Product>;
+type ProductPreview = Pick<Product, "id" | "title">;
+type SafeProduct = Omit<Product, "secret">;
+type DraftProduct = Partial<Product>;
 ```
+
+### 🆚 `Pick<T>` vs `Omit<T>` — Two Sides of the Same Coin
+
+Both create a subset of a type, but from opposite directions:
+
+|                              | `Pick<T, K>`                      | `Omit<T, K>`                                       |
+| ---------------------------- | --------------------------------- | -------------------------------------------------- |
+| Strategy                     | Keep only the keys you list       | Remove only the keys you list                      |
+| Best when                    | Subset is small (2-3 fields)      | You want almost everything; remove just 1-2 fields |
+| New field added to base type | ❌ Must manually add to Pick      | ✅ Automatically included                          |
+| Risk                         | Forgetting to include a new field | Accidentally exposing a sensitive new field        |
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  avatar: string;
+};
+
+// Pick — explicitly choose what survives
+type PublicProfile = Pick<User, "id" | "name">;
+// { id: number; name: string }
+// ⚠️ If 'avatar' is added to User, PublicProfile does NOT auto-include it
+
+// Omit — explicitly choose what is removed
+type SafeUser = Omit<User, "password">;
+// { id: number; name: string; email: string; avatar: string }
+// ✅ If 'role' is added to User, SafeUser automatically includes it
+```
+
+**`Pick` ব্যবহার করুন যখন:** exact ছোট subset চান — যেমন API response-এ শুধু id ও name।
+**`Omit` ব্যবহার করুন যখন:** শুধু sensitive field (যেমন password) বাদ দিতে চান — বাকিটা auto-include।
+
+---
+
+### 🆚 `Partial<T>` vs Manual Optional Props
+
+```ts
+type User = { id: number; name: string; email: string };
+
+// ❌ Manual — duplicates every field; breaks when User gets new properties
+type UserUpdate = {
+  id?: number;
+  name?: string;
+  email?: string;
+  // ⚠️ If 'phone' is added to User, you must remember to add it here too
+};
+
+// ✅ Partial — always derived, always in sync
+type UserUpdate2 = Partial<User>; // { id?: number; name?: string; email?: string }
+
+// Mixed required + optional? Combine Pick + Partial instead of writing it manually:
+type PatchPayload = Partial<Pick<User, "name" | "email">>; // only these two patchable
+```
+
+**`Partial` ব্যবহার করুন যখন:** PATCH request payload বা form draft type বানাচ্ছেন।
+**Manual optional ব্যবহার করুন যখন:** কিছু field required, কিছু optional — তখন `Pick` + `Partial` combine করুন।
 
 ---
 
@@ -1626,6 +1829,45 @@ if (typeof raw === "string") {
 // Option B — assertion (use only when you're sure)
 console.log((raw as string).length); // 10
 ```
+
+### 🆚 `as` vs Type Guard vs `satisfies` — Three Ways to Handle "I Know This Type"
+
+|                          | `as` (assertion)              | Type Guard               | `satisfies` (TS 4.9+)             |
+| ------------------------ | ----------------------------- | ------------------------ | --------------------------------- |
+| Runtime check?           | ❌ No                         | ✅ Yes                   | ❌ No                             |
+| Can cause runtime crash? | ✅ Yes                        | ❌ No                    | ❌ No                             |
+| TS catches wrong type?   | ❌ No — you override TS       | ✅ Yes                   | ✅ Yes                            |
+| Preserves literal types? | ❌ Widens to declared type    | ✅ Narrows via check     | ✅ Yes                            |
+| Best for...              | DOM access, known conversions | `unknown` / union inputs | Config objects, literal inference |
+
+```ts
+// as — you override TS, no runtime safety
+const input = document.getElementById("email") as HTMLInputElement;
+input.value; // ✅ compiles — ❌ crashes if element doesn't exist
+
+// Type guard — safe narrowing based on a real runtime check
+function formatValue(val: string | number): string {
+  if (typeof val === "string") return val.toUpperCase(); // TS narrows to string
+  return val.toFixed(2); // TS narrows to number
+}
+
+// satisfies — validate shape WITHOUT widening the inferred type (TS 4.9+)
+const config = {
+  port: 3000,
+  host: "localhost",
+} satisfies { port: number; host: string };
+
+config.port; // type: 3000 (literal!) — not widened to `number`
+// config.unknown = "x"; // ❌ Error — shape is still validated
+
+// Compare: 'as' loses the literal
+const config2 = { port: 3000 } as { port: number };
+config2.port; // type: number — literal 3000 is gone
+```
+
+**`as` ব্যবহার করুন যখন:** DOM elements access করছেন বা আপনি ১০০% নিশ্চিত type সম্পর্কে।
+**Type guard ব্যবহার করুন যখন:** `unknown`, union type, বা external/API data handle করছেন।
+**`satisfies` ব্যবহার করুন যখন:** config object-এ literal type inference রাখতে চান এবং shape-ও validate করতে চান।
 
 ---
 
@@ -1731,6 +1973,104 @@ console.log(safeParse(42)); // 42
 console.log(safeParse("hello")); // 0
 console.log(safeParse(null)); // 0
 ```
+
+### 🆚 `any` vs `unknown` — The Most Important Safety Choice in TypeScript
+
+|                         | `any`                      | `unknown`                       |
+| ----------------------- | -------------------------- | ------------------------------- |
+| Assignable to anything? | ✅ Yes                     | ❌ No — must narrow first       |
+| Can call methods on it? | ✅ Yes (no checks at all)  | ❌ No — must narrow first       |
+| Defeats type checking?  | ✅ Yes, completely         | ❌ No — stays safe              |
+| When to use?            | ⚠️ Last resort / migration | ✅ External data, API responses |
+
+```ts
+// any — TS looks away, no safety net
+function processAny(val: any) {
+  val.toUpperCase(); // ✅ compiles — ❌ crashes at runtime if val is a number
+  val.nonExistent(); // ✅ compiles — completely unchecked
+}
+
+// unknown — TS forces you to check before use
+function processUnknown(val: unknown) {
+  // val.toUpperCase();           // ❌ Error: Object is of type 'unknown'
+  if (typeof val === "string") {
+    console.log(val.toUpperCase()); // ✅ narrowed to string — safe
+  }
+}
+```
+
+**`any` ব্যবহার করুন যখন:** TS migration করছেন বা third-party library-র সাথে কাজ করছেন — সর্বশেষ উপায়।
+**`unknown` ব্যবহার করুন যখন:** API response, user input, বা যেকোনো external data accept করছেন।
+
+---
+
+### 🆚 `null` vs `undefined` — Different Absence, Different Intent
+
+|                             | `null`                                                | `undefined`                                           |
+| --------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| Meaning                     | **Intentional** absence — "set to nothing on purpose" | **Unintentional** absence — "never assigned"          |
+| Default for unassigned vars | ❌ No                                                 | ✅ Yes                                                |
+| JSON serializable           | ✅ `null` survives `JSON.stringify`                   | ❌ `undefined` is stripped                            |
+| Optional function params    | ❌                                                    | ✅ `f(x?: string)` means `x` is `string \| undefined` |
+
+```ts
+// undefined — unassigned / optional
+let name: string | undefined; // never set
+console.log(name); // undefined
+
+function greet(user?: string) {
+  // user is string | undefined
+  console.log(user ?? "Guest");
+}
+
+// null — explicitly set to "no value"
+let selectedItem: string | null = null; // deliberately empty
+selectedItem = "Apple"; // later assigned
+
+// JSON difference
+const obj = { a: null, b: undefined };
+JSON.stringify(obj); // '{"a":null}' — b is stripped entirely!
+```
+
+**`null` ব্যবহার করুন যখন:** জানিয়ে দিতে চান "এই value ইচ্ছাকৃতভাবে খালি" (যেমন database-এ absent field)।
+**`undefined` ব্যবহার করুন যখন:** optional property বা unset state বোঝাতে চান।
+
+---
+
+### 🆚 `never` vs `void` — Two Kinds of "Returns Nothing"
+
+|                           | `void`                             | `never`                                     |
+| ------------------------- | ---------------------------------- | ------------------------------------------- |
+| Meaning                   | Returns, but with no useful value  | **Never returns** — throws or loops forever |
+| `return` statement        | ✅ Allowed (implicit or `return;`) | ❌ Reaching a `return` is a TS error        |
+| Assignable to other types | ❌                                 | ✅ `never` is a subtype of everything       |
+| Common use case           | Event handlers, logging functions  | `throw` helpers, exhaustive union checks    |
+
+```ts
+// void — function finishes, but we don't use the return value
+function logMessage(msg: string): void {
+  console.log(msg);
+}
+
+// never — function truly never returns
+function fail(msg: string): never {
+  throw new Error(msg); // always throws
+}
+
+// never for exhaustive union checks — catches missing cases at compile time
+type Shape = "circle" | "square" | "triangle";
+
+function getArea(shape: Shape): number {
+  if (shape === "circle") return Math.PI;
+  if (shape === "square") return 1;
+  if (shape === "triangle") return 0.5;
+  const _check: never = shape; // ❌ TS error if a new Shape is added and not handled here
+  return _check;
+}
+```
+
+**`void` ব্যবহার করুন যখন:** function side-effect করে কিন্তু কোনো useful value return করে না।
+**`never` ব্যবহার করুন যখন:** function সবসময় throw করে, বা discriminated union exhaustive check করছেন।
 
 ---
 
@@ -1954,22 +2294,22 @@ console.log(hello);
 
 Try these in `test.ts` to solidify everything you've learned:
 
-| # | Challenge | Concepts Used |
-|---|---|---|
-| 1 | Create a `Product` type with `id`, `title`, `price`, optional `discount` | Type alias, optional |
-| 2 | Write a function that accepts `unknown` price and returns 10% off | unknown, type guard |
-| 3 | Model a `Payment` union as either `CashPayment` or `CardPayment` | Discriminated union |
-| 4 | Write a `mergeUsers` function using spread | Spread, generics |
-| 5 | Destructure a nested order object with renaming | Destructuring, aliasing |
-| 6 | Write a rest-param function that sums all numbers | Rest, typed params |
-| 7 | Create an `Employee` interface extending a `Person` interface | Interface, extends |
-| 8 | Decide: `type` or `interface` for a `Vehicle` shape you'll extend | Alias vs Interface |
-| 9 | Write a `safeParse<T>` generic function that returns `T \| null` | Generics |
-| 10 | Use `Partial<T>` to create an update payload for your `Product` type | Utility Types |
-| 11 | Use `Omit` to create a `PublicUser` that strips `password` | Utility Types |
-| 12 | Write a type-safe `getProperty` function using `keyof` | keyof & generics |
-| 13 | Create a string enum `Season` and a function that returns its length | Enums |
-| 14 | Write a custom type guard `isDate` that checks for `Date` instances | Type Guards |
+| #   | Challenge                                                                | Concepts Used           |
+| --- | ------------------------------------------------------------------------ | ----------------------- |
+| 1   | Create a `Product` type with `id`, `title`, `price`, optional `discount` | Type alias, optional    |
+| 2   | Write a function that accepts `unknown` price and returns 10% off        | unknown, type guard     |
+| 3   | Model a `Payment` union as either `CashPayment` or `CardPayment`         | Discriminated union     |
+| 4   | Write a `mergeUsers` function using spread                               | Spread, generics        |
+| 5   | Destructure a nested order object with renaming                          | Destructuring, aliasing |
+| 6   | Write a rest-param function that sums all numbers                        | Rest, typed params      |
+| 7   | Create an `Employee` interface extending a `Person` interface            | Interface, extends      |
+| 8   | Decide: `type` or `interface` for a `Vehicle` shape you'll extend        | Alias vs Interface      |
+| 9   | Write a `safeParse<T>` generic function that returns `T \| null`         | Generics                |
+| 10  | Use `Partial<T>` to create an update payload for your `Product` type     | Utility Types           |
+| 11  | Use `Omit` to create a `PublicUser` that strips `password`               | Utility Types           |
+| 12  | Write a type-safe `getProperty` function using `keyof`                   | keyof & generics        |
+| 13  | Create a string enum `Season` and a function that returns its length     | Enums                   |
+| 14  | Write a custom type guard `isDate` that checks for `Date` instances      | Type Guards             |
 
 ### 💡 Pro Tips
 
