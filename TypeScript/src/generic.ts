@@ -55,20 +55,6 @@ console.log(stringObject); // Output: { value: 'Hello, World!' }
 console.log(numberObject); // Output: { value: 42 }
 console.log(booleanObject); // Output: { value: true }
 
-// Using Generics with Functions
-
-function identity<T>(arg: T): T {
-  return arg;
-}
-
-const stringIdentity = identity<string>("Hello, World!");
-const numberIdentity = identity<number>(42);
-const booleanIdentity = identity<boolean>(true);
-
-console.log(stringIdentity); // Output: Hello, World!
-console.log(numberIdentity); // Output: 42
-console.log(booleanIdentity); // Output: true
-
 // Using Generics with Classes
 class GenericClass<T> {
   private value: T;
@@ -90,7 +76,7 @@ console.log(stringInstance.getValue()); // Output: Hello, World!
 console.log(numberInstance.getValue()); // Output: 42
 console.log(booleanInstance.getValue()); // Output: true
 
-// Using Generics with Interfaces
+//# Using Generics with Interfaces
 interface GenericInterface<T> {
   value: T;
   getValue(): T;
@@ -180,3 +166,45 @@ const richDev: Developer<prowatch, { model: string; engine: string }> = {
 };
 
 console.log(richDev);
+
+// Using Generics with Functions
+
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+const stringIdentity = identity<string>("Hello, World!");
+const numberIdentity = identity<number>(42);
+const booleanIdentity = identity<boolean>(true);
+
+console.log(stringIdentity); // Output: Hello, World!
+console.log(numberIdentity); // Output: 42
+console.log(booleanIdentity); // Output: true
+
+const createArr = (value: string) => {
+  [value];
+};
+
+const createArrNum = (value: number) => {
+  [value];
+};
+const createArrWithObj = (value: { name: string; age: number }) => {
+  [value];
+};
+
+console.log(createArr("Hello, World!")); // Output: [ 'Hello, World!' ]
+console.log(createArrNum(42)); // Output: [ 42 ]
+console.log(createArrWithObj({ name: "Alice", age: 30 })); // Output: [ { name: 'Alice', age: 30 } ]
+
+const createArrWithGenerics = <T>(value: T): T[] => {
+  return [value];
+};
+
+console.log(createArrWithGenerics<string>("Hello, World!")); // Output: [ 'Hello, World!' ]
+console.log(createArrWithGenerics<number>(42)); // Output: [ 42 ]
+console.log(
+  createArrWithGenerics<{ name: string; age: number }>({
+    name: "Alice",
+    age: 30,
+  }),
+); // Output: [ { name: 'Alice', age: 30 } ]
