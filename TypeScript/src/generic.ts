@@ -1,62 +1,182 @@
-// Generics in TypeScript
-// Generic ফাংশন, interface এবং type alias দিয়ে reusable, type-safe code লেখা যায়।
+// some array types
+const friends: string[] = ["Alice", "Bob", "Charlie"];
+const numbers: number[] = [1, 2, 3, 4, 5];
+const isActive: boolean[] = [true, false, true];
 
-// Generic function — works with any type T
-function identity<T>(value: T): T {
-  return value;
-}
+// Using Generics with Array
 
-console.log(identity<string>("hello"));  // "hello"
-console.log(identity<number>(42));        // 42
-console.log(identity(true));              // true — T inferred as boolean
+type GenericArray = Array<string>;
+type GenericNumberArray = Array<number>;
+type GenericBooleanArray = Array<boolean>;
 
-// Generic function with multiple type parameters
-function pair<T, U>(first: T, second: U): [T, U] {
-  return [first, second];
-}
+const friends2: GenericArray = ["Alice", "Bob", "Charlie"];
+const numbers2: GenericNumberArray = [1, 2, 3, 4, 5];
+const isActive2: GenericBooleanArray = [true, false, true];
 
-const result = pair("age", 30); // [string, number]
-console.log(result);
+// Using Generics
 
-// Generic interface — reusable API response wrapper
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message: string;
-}
+type GenericType<T> = Array<T>;
 
-type User = { id: number; name: string };
+const friends3: GenericType<string> = ["Alice", "Bob", "Charlie"];
+const numbers3: GenericType<number> = [1, 2, 3, 4, 5];
+const isActive3: GenericType<boolean> = [true, false, true];
 
-const userResponse: ApiResponse<User> = {
-  data: { id: 1, name: "Alice" },
-  status: 200,
-  message: "OK",
+type coordinate<T> = {
+  x: T;
+  y: T;
 };
 
-console.log(userResponse);
+const point1: coordinate<number> = { x: 10, y: 20 };
+const point2: coordinate<string> = { x: "10", y: "20" };
 
-// Generic with constraint — T must have a 'length' property
-function logLength<T extends { length: number }>(value: T): T {
-  console.log(`Length: ${value.length}`);
-  return value;
-}
+console.log(point1); // Output: { x: 10, y: 20 }
+console.log(point2); // Output: { x: '10', y: '20' }
 
-logLength("hello");        // Length: 5
-logLength([1, 2, 3]);      // Length: 3
-// logLength(42);          // ❌ Error: number has no .length
+// Using Generics with Array of objects
+type GenericObject2<T> = Array<T>;
 
-// Generic type alias
-type Maybe<T> = T | null | undefined;
+const newstringObject: GenericObject2<{ name: string; age: number }> = [
+  { name: "Alice", age: 30 },
+  { name: "Bob", age: 25 },
+];
+console.log(newstringObject); // Output: [ { name: 'Alice', age: 30 }, { name: 'Bob', age: 25 } ]
 
-const username: Maybe<string> = null;
-const userId: Maybe<number>   = 42;
+// Using Generics with objects
 
-// Generic with default type parameter
-interface Wrapper<T = string> {
+type GenericObject<T> = {
   value: T;
+};
+
+const stringObject: GenericObject<string> = { value: "Hello, World!" };
+const numberObject: GenericObject<number> = { value: 42 };
+const booleanObject: GenericObject<boolean> = { value: true };
+
+console.log(stringObject); // Output: { value: 'Hello, World!' }
+console.log(numberObject); // Output: { value: 42 }
+console.log(booleanObject); // Output: { value: true }
+
+// Using Generics with Functions
+
+function identity<T>(arg: T): T {
+  return arg;
 }
 
-const w1: Wrapper         = { value: "hello" };  // T defaults to string
-const w2: Wrapper<number>  = { value: 99 };       // T = number
+const stringIdentity = identity<string>("Hello, World!");
+const numberIdentity = identity<number>(42);
+const booleanIdentity = identity<boolean>(true);
 
-console.log(w1, w2);
+console.log(stringIdentity); // Output: Hello, World!
+console.log(numberIdentity); // Output: 42
+console.log(booleanIdentity); // Output: true
+
+// Using Generics with Classes
+class GenericClass<T> {
+  private value: T;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+
+  getValue(): T {
+    return this.value;
+  }
+}
+
+const stringInstance = new GenericClass<string>("Hello, World!");
+const numberInstance = new GenericClass<number>(42);
+const booleanInstance = new GenericClass<boolean>(true);
+
+console.log(stringInstance.getValue()); // Output: Hello, World!
+console.log(numberInstance.getValue()); // Output: 42
+console.log(booleanInstance.getValue()); // Output: true
+
+// Using Generics with Interfaces
+interface GenericInterface<T> {
+  value: T;
+  getValue(): T;
+}
+
+class GenericClassWithInterface<T> implements GenericInterface<T> {
+  value: T;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+
+  getValue(): T {
+    return this.value;
+  }
+}
+
+const stringInstance2 = new GenericClassWithInterface<string>("Hello, World!");
+const numberInstance2 = new GenericClassWithInterface<number>(42);
+const booleanInstance2 = new GenericClassWithInterface<boolean>(true);
+
+console.log(stringInstance2.getValue()); // Output: Hello, World!
+console.log(numberInstance2.getValue()); // Output: 42
+console.log(booleanInstance2.getValue()); // Output: true
+
+interface Developer<T, X = null> {
+  name: string;
+  age: number;
+  device: {
+    brand: string;
+    model: string;
+    releaseYear: string;
+  };
+  smartwatch: T;
+  bike?: X;
+}
+
+interface litewatch {
+  heartRate: number;
+  stepCount: number;
+}
+
+interface prowatch {
+  heartRate: number;
+  stepCount: number;
+  sleepHours: number;
+  callSupport: boolean;
+}
+
+const poorDev: Developer<litewatch> = {
+  name: "John Doe",
+  age: 30,
+  device: {
+    brand: "Dell",
+    model: "XPS 15",
+    releaseYear: "2020",
+  },
+  smartwatch: {
+    heartRate: 72,
+    stepCount: 5000,
+  },
+  bike: {
+    model: "Trek FX 3.0",
+  },
+};
+
+console.log(poorDev);
+
+const richDev: Developer<prowatch, { model: string; engine: string }> = {
+  name: "Jane Doe",
+  age: 28,
+  device: {
+    brand: "Apple",
+    model: "MacBook Pro",
+    releaseYear: "2025",
+  },
+  smartwatch: {
+    heartRate: 68,
+    stepCount: 8000,
+    sleepHours: 7,
+    callSupport: true,
+  },
+  bike: {
+    model: "Trek FX 3.0",
+    engine: "Electric",
+  },
+};
+
+console.log(richDev);
