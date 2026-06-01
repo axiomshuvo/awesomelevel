@@ -51,6 +51,7 @@ TypeScript/
     typeAlias.ts          ← Phase 2
     interface.ts          ← Phase 2
     union.ts              ← Phase 2
+    generic.ts            ← Phase 2.5
     typeAssertion.ts      ← Phase 3
     nullableUdefinedNever.ts  ← Phase 3
     destructuring.ts      ← Phase 3
@@ -189,6 +190,8 @@ let stock: number = 42;
 - `[T1, T2]` — tuples (fixed length + type order)
 - `{ key: type }` — inline object types
 - Optional property `?`
+- Literal type (e.g. `"OpenAI"`) — restrict a property to one exact value
+- `readonly` modifier — prevent mutation after object creation
 
 ### Code Example (from `nonPrimitive.ts`)
 
@@ -227,6 +230,20 @@ const person3: { name: string; age: number; address?: string } = {
   // address is optional — no error
 };
 person3.age = 21; // ✅ Reassignment is fine
+
+// ✅ Literal type — value locked to one exact string
+const userAI: { organization: "OpenAI"; role: string } = {
+  organization: "OpenAI",
+  role: "AI Researcher",
+};
+// userAI.organization = "Google"; // ❌ Error: only "OpenAI" is assignable
+
+// ✅ readonly modifier — property cannot be reassigned after creation
+const userRO: { readonly organization: string; role: string } = {
+  organization: "Google",
+  role: "Software Engineer",
+};
+// userRO.organization = "OpenAI"; // ❌ Error: Cannot assign to 'organization' (readonly)
 ```
 
 ### Explanation | ব্যাখ্যা
@@ -237,6 +254,8 @@ person3.age = 21; // ✅ Reassignment is fine
 - A tuple has a fixed number of elements with a specific type at each position.
 - Object shapes enforce which properties must exist and their types.
 - The `?` suffix makes a property optional.
+- A **literal type** pins a property to one exact value (e.g. `organization: "OpenAI"`). Assigning any other string is a compiler error.
+- `readonly` prevents reassignment after the object is created — great for config objects or immutable data.
 
 **বাংলা:**
 
@@ -244,6 +263,8 @@ person3.age = 21; // ✅ Reassignment is fine
 - Tuple-এ fixed সংখ্যক element থাকে, প্রতিটি position-এর type নির্দিষ্ট।
 - Object shape enforce করে কোন property থাকতে হবে এবং কী type হবে।
 - `?` দিলে property টি optional হয়ে যায়।
+- **Literal type** একটি property-কে নির্দিষ্ট একটি value-এ আটকে দেয় (যেমন `organization: "OpenAI"`)। অন্য কোনো value দিলে compiler error হবে।
+- `readonly` object তৈরির পরে property পরিবর্তন করতে দেয় না — config বা immutable data-র জন্য দারুণ।
 
 ### ⚠️ Common Mistakes
 
@@ -599,6 +620,33 @@ type Product = {
 };
 ```
 
+### 🔁 Recursive Types
+
+A type alias can reference itself — ideal for tree-like or nested data structures.
+
+একটি type alias নিজেকেই reference করতে পারে — tree বা nested structure-এর জন্য কাজে আসে।
+
+```ts
+// (from src/typeAlias.ts)
+type TreeNode = {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
+};
+
+const rootNode: TreeNode = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 },
+  },
+  right: { value: 3 },
+};
+```
+
+> **Note:** `interface` also supports self-reference, but `type` is the more common choice for recursive aliases.
+
 ---
 
 ## 6️⃣ Interface 🧾
@@ -655,6 +703,15 @@ const person2: PersonWithRole = {
   age: 25,
   role: "admin",
 };
+
+// Array interface — index signature describes array-like structures
+interface StringArray {
+  [index: number]: string;
+}
+
+const myArray: StringArray = ["Hello", "World"];
+console.log(myArray[0]); // "Hello"
+console.log(myArray[1]); // "World"
 ```
 
 ### Explanation | ব্যাখ্যা
@@ -665,6 +722,7 @@ const person2: PersonWithRole = {
 - `extends` lets one interface inherit all properties of another, then add more.
 - A function interface describes a callable — useful for defining callback contracts.
 - You can mix `interface` and `type` with `&` (intersection) to combine both.
+- An **array interface** uses an index signature (`[index: number]: T`) to describe array-like structures.
 
 **বাংলা:**
 
@@ -672,6 +730,7 @@ const person2: PersonWithRole = {
 - `extends` দিয়ে একটি interface অন্যটির সব property inherit করে নতুন property যোগ করতে পারে।
 - Function interface একটি callable describe করে — callback contract define করার জন্য কাজে আসে।
 - `interface` এবং `type` কে `&` দিয়ে combine করা যায়।
+- **Array interface** index signature (`[index: number]: T`) ব্যবহার করে array-like structure type করে।
 
 ### ⚠️ Common Mistakes
 
@@ -1475,6 +1534,25 @@ interface Wrapper<T = string> {
 
 const w1: Wrapper = { value: "hello" }; // T defaults to string
 const w2: Wrapper<number> = { value: 99 }; // T = number
+
+// Generic class — same concept applied to classes
+class Box<T> {
+  private value: T;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+
+  getValue(): T {
+    return this.value;
+  }
+}
+
+const stringBox = new Box<string>("Hello, World!");
+const numberBox = new Box<number>(42);
+
+console.log(stringBox.getValue()); // "Hello, World!" — T = string
+console.log(numberBox.getValue()); // 42              — T = number
 ```
 
 ### Explanation | ব্যাখ্যা
@@ -1485,6 +1563,7 @@ const w2: Wrapper<number> = { value: 99 }; // T = number
 - TypeScript can often **infer** `T` from the argument — you don't always need to write `<string>` explicitly.
 - `T extends SomeType` **constrains** what `T` can be — great for ensuring the value has certain properties.
 - Generics are the right tool when you find yourself copy-pasting the same function with different types.
+- **Generic classes** work the same way — `T` is resolved when the class is instantiated with `new Box<string>(...)`.
 
 **বাংলা:**
 
@@ -1492,6 +1571,7 @@ const w2: Wrapper<number> = { value: 99 }; // T = number
 - TypeScript প্রায়ই argument থেকে `T` **infer** করে নিতে পারে — সবসময় `<string>` লিখতে হয় না।
 - `T extends SomeType` দিয়ে `T` কী হতে পারে তা **constrain** করা যায় — value-এ নির্দিষ্ট property আছে কিনা নিশ্চিত করার জন্য দারুণ।
 - যখন একই function বিভিন্ন type-এর জন্য copy-paste করছেন, generic ব্যবহার করার সময় এসেছে।
+- **Generic class**-এও একই ধারণা কাজ করে — `new Box<string>(...)` call করার সময় `T` resolve হয়।
 
 ### ⚠️ Common Mistakes
 

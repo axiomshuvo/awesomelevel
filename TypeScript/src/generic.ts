@@ -200,6 +200,10 @@ const createArrWithGenerics = <T>(value: T): T[] => {
   return [value];
 };
 
+// const createArrWithGenerics = <T>(value: T) => {
+//   return [value];
+// };
+
 console.log(createArrWithGenerics<string>("Hello, World!")); // Output: [ 'Hello, World!' ]
 console.log(createArrWithGenerics<number>(42)); // Output: [ 42 ]
 console.log(
@@ -208,3 +212,18 @@ console.log(
     age: 30,
   }),
 ); // Output: [ { name: 'Alice', age: 30 } ]
+
+// tuple with generics
+
+const CreateArrWithTuple = (param1: string, param2: number) => {
+  return [param1, param2];
+};
+
+const CreateArrWithTupleGenerics = <T, U>(param1: T, param2: U): [T, U] => {
+  return [param1, param2];
+};
+const result1 = CreateArrWithTupleGenerics<string, number>("Hello", 42);
+const result2 = CreateArrWithTupleGenerics<string, boolean>("Hello", true);
+
+console.log(result1); // Output: [ 'Hello', 42 ]
+console.log(result2); // Output: [ 'Hello', true ]
