@@ -45,3 +45,23 @@ const res5 = addConstrainedStudent(std2); // এই ক্ষেত্রে, st
 const res6 = addConstrainedStudent(std3); // এই ক্ষেত্রে, std3 তে name এবং id নেই, তাই এটি একটি error হবে।
 // এইভাবে, আমরা constraint ব্যবহার করে generic type কে নির্দিষ্ট ধরনের data type এর সাথে সীমাবদ্ধ করতে পারি,
 // যা আমাদের কোডকে আরও নিরাপদ এবং নির্ভরযোগ্য করে তোলে।
+
+// Keyof Constraint
+// keyof T দিয়ে T-এর সব key-এর union type পাওয়া যায়।
+// K extends keyof T মানে K অবশ্যই T-এর একটি valid key হতে হবে।
+
+type RichPeopleVechicle = {
+  car: string;
+  bike: string;
+  yacht: string;
+};
+
+const getVehicle = <T, K extends keyof T>(obj: T, key: K): T[K] => {
+  return obj[key];
+};
+
+const richGuy: RichPeopleVechicle = {
+  car: "Ferrari",
+  bike: "Ducati",
+  yacht: "Sunseeker",
+};

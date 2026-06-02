@@ -52,6 +52,7 @@ TypeScript/
     interface.ts          ← Phase 2
     union.ts              ← Phase 2
     generic.ts            ← Phase 2.5
+    constraint.ts         ← Phase 2.5
     typeAssertion.ts      ← Phase 3
     nullableUdefinedNever.ts  ← Phase 3
     destructuring.ts      ← Phase 3
@@ -63,13 +64,13 @@ TypeScript/
 
 ## 🧭 Learning Phases at a Glance
 
-| Phase            | Level              | Goal                                                  | Topics                                                                            |
-| ---------------- | ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives, Functions, `?` Operators                              |
-| **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias, Interface, Union & Intersection                                       |
-| **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics, Utility Types |
-| **Phase 3** 🌳   | Intermediate       | Safety patterns, pitfalls, real-world techniques      | Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest              |
-| **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                               |
+| Phase            | Level              | Goal                                                  | Topics                                                                                                                                                                                                                           |
+| ---------------- | ------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives (+ Literal Types, `readonly`, Labeled Tuples), Functions (+ Optional/Default Params, Overloads), `?` Operators                                                                                        |
+| **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias (+ Recursive Types), Interface (+ Array Interface), Union & Intersection (+ Discriminated Unions)                                                                                                                     |
+| **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics (+ Generic Constraints, Generic Classes), Utility Types, Conditional Types + `infer`, Mapped Types, Template Literal Types, `satisfies`, Indexed Access Types |
+| **Phase 3** 🌳   | Intermediate       | Classes, async patterns, safety & real-world use      | Classes, Async/Await & Promise Typing, Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest                                                                                                                      |
+| **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                                                                                                                                                                              |
 
 ---
 
@@ -289,6 +290,36 @@ Create a tuple `[string, number, boolean]` representing a user's name, age, and 
 const userEntry: [string, number, boolean] = ["Alice", 28, true];
 ```
 
+### 🏷️ Labeled & Optional Tuple Elements
+
+TypeScript 4.0+ lets you **name** each tuple position (labels are for documentation — they don't change behaviour) and mark trailing elements as **optional**.
+
+TypeScript 4.0+ থেকে tuple-এর প্রতিটি position-এ **নাম** দেওয়া যায় (label শুধু documentation — behaviour পরিবর্তন হয় না) এবং trailing element-কে **optional** করা যায়।
+
+```ts
+// Labeled tuple — names improve VS Code tooltips
+type Point = [x: number, y: number];
+type RGB = [red: number, green: number, blue: number];
+
+const origin: Point = [0, 0];
+const white: RGB = [255, 255, 255];
+
+// Optional elements — must appear AFTER all required ones
+type Name = [first: string, last: string, middle?: string];
+
+const fullName: Name = ["John", "Doe", "Paul"]; // ✅ three elements
+const shortName: Name = ["John", "Doe"]; // ✅ middle omitted
+
+// Rest elements — variable-length tail
+type StringsThenNumbers = [label: string, ...values: number[]];
+
+const row: StringsThenNumbers = ["score", 10, 20, 30]; // ✅
+```
+
+> **Tip:** Labels are just hints for callers — `type Point = [x: number, y: number]` and `type Point = [number, number]` are structurally identical.
+>
+> **টিপ:** Label শুধু caller-কে সাহায্য করে — `[x: number, y: number]` এবং `[number, number]` structurally same।
+
 ---
 
 ## 3️⃣ Functions 🔧
@@ -381,6 +412,97 @@ Write a typed arrow function `multiply` that takes two numbers and returns their
 const multiply = (a: number, b: number): number => a * b;
 console.log(multiply(4, 5)); // 20
 ```
+
+### 🎛️ Optional & Default Parameters
+
+Optional parameters use `?` — the caller may omit them.
+Default parameters supply a fallback value when the argument is absent or `undefined`.
+
+Optional parameter `?` ব্যবহার করলে caller সেটা না দিলেও চলে।
+Default parameter-এ fallback value থাকে — argument না দিলে বা `undefined` দিলে সেটা ব্যবহৃত হয়।
+
+```ts
+// Optional parameter — greeting? is string | undefined inside the function
+function greet(name: string, greeting?: string): string {
+  return `${greeting ?? "Hello"}, ${name}!`;
+}
+
+console.log(greet("Alice")); // "Hello, Alice!"
+console.log(greet("Alice", "Hi")); // "Hi, Alice!"
+
+// Default parameter — implicit type is inferred from the default value
+function repeat(text: string, times: number = 3): string {
+  return text.repeat(times);
+}
+
+console.log(repeat("ha")); // "hahaha"   (times defaults to 3)
+console.log(repeat("ha", 2)); // "haha"
+
+// Default + explicit type annotation
+function createId(prefix: string = "user", id: number): string {
+  return `${prefix}_${id}`;
+}
+
+console.log(createId(undefined, 42)); // "user_42" — undefined triggers default
+console.log(createId("admin", 1)); // "admin_1"
+```
+
+**English:**
+
+- `?` makes a parameter `T | undefined` inside the function — you must guard before using it.
+- Default values provide a built-in fallback and also make the parameter optional at the call site.
+- `undefined` at the call site always triggers the default; `null` does **not**.
+- Default parameters must come **after** required parameters (or be the last ones).
+
+**বাংলা:**
+
+- `?` parameter-কে `T | undefined` করে — ব্যবহারের আগে guard করতে হবে।
+- Default value built-in fallback দেয় এবং call site-এ parameter-কে optional-ও করে।
+- Call site-এ `undefined` দিলে default trigger হয়; কিন্তু `null` দিলে হয় না।
+- Default parameter required parameter-এর পরে আসতে হবে।
+
+### 🔀 Function Overloads
+
+Function overloads let you declare **multiple typed call signatures** for a single function. TypeScript uses the overload signatures for type checking; the single implementation signature does the actual work.
+
+Function overload দিয়ে একটি function-এর জন্য **একাধিক typed call signature** declare করা যায়। TypeScript type checking-এ overload signature ব্যবহার করে; actual কাজ করে implementation signature।
+
+```ts
+// Overload signatures (what callers see)
+function format(value: string): string;
+function format(value: number, decimals: number): string;
+
+// Implementation signature (not visible to callers directly)
+function format(value: string | number, decimals?: number): string {
+  if (typeof value === "string") return value.trim();
+  return value.toFixed(decimals ?? 2);
+}
+
+console.log(format("  hello  ")); // "hello"
+console.log(format(3.14159, 2)); // "3.14"
+// format(true);                   // ❌ Error: no overload matches boolean
+
+// Practical example — overloads for a DOM query helper
+function query(selector: string): Element | null;
+function query(selector: string, all: true): NodeList;
+function query(selector: string, all?: boolean): Element | null | NodeList {
+  return all
+    ? document.querySelectorAll(selector)
+    : document.querySelector(selector);
+}
+```
+
+**English:**
+
+- Write overload signatures first (2+), then one implementation that handles all cases.
+- Callers only see the overload signatures — the implementation signature is hidden.
+- Overloads are better than a large union return type when different inputs produce distinctly different outputs.
+
+**বাংলা:**
+
+- প্রথমে overload signature (২টা বা বেশি) লিখুন, তারপর একটি implementation যা সব case handle করে।
+- Caller শুধু overload signature দেখে — implementation signature hidden থাকে।
+- যখন ভিন্ন input থেকে distinctly ভিন্ন output আসে, তখন বড় union return type-এর চেয়ে overload ভালো।
 
 ---
 
@@ -866,6 +988,61 @@ function getSides(shape: Shape): number {
   return 3;
 }
 ```
+
+### 🎯 Discriminated Unions
+
+A discriminated union is a union of object types that all share one **literal property** (the "discriminant"). TypeScript narrows the union automatically when you check that property.
+
+Discriminated union হলো এমন object type-এর union যেগুলোর একটি **shared literal property** (discriminant) আছে। সেই property check করলে TypeScript স্বয়ংক্রিয়ভাবে union narrow করে।
+
+```ts
+// Each variant has a unique 'kind' discriminant
+type Circle = { kind: "circle"; radius: number };
+type Square = { kind: "square"; side: number };
+type Triangle = { kind: "triangle"; base: number; height: number };
+
+type Shape = Circle | Square | Triangle;
+
+function getArea(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius ** 2; // TS knows: Circle
+    case "square":
+      return shape.side ** 2; // TS knows: Square
+    case "triangle":
+      return 0.5 * shape.base * shape.height; // TS knows: Triangle
+    default:
+      const _exhaustive: never = shape; // ✅ compile error if a new variant is added
+      return _exhaustive;
+  }
+}
+
+console.log(getArea({ kind: "circle", radius: 5 })); // 78.53...
+console.log(getArea({ kind: "square", side: 4 })); // 16
+console.log(getArea({ kind: "triangle", base: 6, height: 3 })); // 9
+
+// Real-world: API result union
+type Success = { status: "ok"; data: string[] };
+type Failure = { status: "error"; message: string };
+type ApiResult = Success | Failure;
+
+function handle(res: ApiResult): string {
+  if (res.status === "ok") return res.data.join(", "); // TS knows: Success
+  return `Error: ${res.message}`; // TS knows: Failure
+}
+```
+
+**English:**
+
+- The discriminant must be a **literal type** (`"circle"`, `200`, `true`) — not a broad type like `string`.
+- Use `switch` on the discriminant for exhaustive checking — the `never` default catches unhandled variants at compile time.
+- This pattern replaces fragile `instanceof` checks and `as` casts with safe, self-documenting code.
+
+**বাংলা:**
+
+- Discriminant অবশ্যই **literal type** হতে হবে (`"circle"`, `200`, `true`) — `string`-এর মতো broad type হলে কাজ করবে না।
+- `switch`-এ `never` default ব্যবহার করুন — নতুন variant যোগ হলে compile time-এ error ধরা পড়বে।
+- এই pattern `instanceof` check এবং `as` cast-এর চেয়ে safe এবং self-documenting।
 
 ---
 
@@ -1618,6 +1795,91 @@ console.log(getFirst(["a", "b", "c"])); // "a" — T inferred as string
 console.log(getFirst([])); // undefined
 ```
 
+### 🔒 Generic Constraints (`T extends`)
+
+A **constraint** limits what types `T` can be. Without one, TypeScript treats `T` as completely unknown. With `T extends SomeType`, you can safely access properties that `SomeType` guarantees.
+
+**Constraint** দিয়ে `T` কী হতে পারে তা সীমিত করা হয়। Constraint না থাকলে TypeScript `T`-কে সম্পূর্ণ unknown মনে করে। `T extends SomeType` দিলে `SomeType`-এর property safely access করা যায়।
+
+```ts
+// ❌ Without constraint — TypeScript can't trust T has any properties
+function getLength<T>(value: T): number {
+  return value.length; // ❌ Error: Property 'length' does not exist on type 'T'
+}
+
+// ✅ With constraint — T must have a 'length' property
+function getLength2<T extends { length: number }>(value: T): number {
+  return value.length; // ✅ safe
+}
+
+getLength2("hello"); // 5   — string satisfies { length: number }
+getLength2([1, 2, 3]); // 3   — array satisfies { length: number }
+// getLength2(42);         // ❌ Error: number has no 'length'
+
+// Constraint with keyof — type-safe property lookup
+function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+const user = { id: 1, name: "Alice", email: "alice@example.com" };
+const name = getProperty(user, "name"); // ✅ type: string
+const id = getProperty(user, "id"); // ✅ type: number
+// getProperty(user, "age");               // ❌ Error: "age" not in typeof user
+
+// Multiple constraints with &
+interface HasId {
+  id: number;
+}
+interface HasName {
+  name: string;
+}
+
+function display<T extends HasId & HasName>(item: T): string {
+  return `[${item.id}] ${item.name}`;
+}
+
+display({ id: 1, name: "Widget", price: 9.99 }); // ✅ extra props are fine
+// display({ id: 1 });                            // ❌ Error: missing 'name'
+
+// Constraint to a specific set of types
+function double<T extends number | string>(value: T): T {
+  if (typeof value === "number") return (value * 2) as T;
+  return (value + value) as T;
+}
+
+console.log(double(5)); // 10
+console.log(double("ha")); // "haha"
+// double(true);               // ❌ Error: boolean not in number | string
+```
+
+**⚠️ Common Mistakes**
+
+```ts
+// ❌ Wrong: forgetting the constraint, then using a property
+function first<T>(arr: T[]): string {
+  return arr[0].toUpperCase(); // ❌ T could be number, boolean, etc.
+}
+
+// ✅ Correct: constrain T to string
+function first2<T extends string>(arr: T[]): string {
+  return arr[0].toUpperCase(); // ✅ T is guaranteed to be a string
+}
+```
+
+**⚡ Quick Quiz**
+
+Write a generic function `merge<T, U>` that merges two objects. Constrain both type params to `object`.
+
+```ts
+// Answer:
+function merge<T extends object, U extends object>(a: T, b: U): T & U {
+  return { ...a, ...b };
+}
+
+const result = merge({ name: "Alice" }, { age: 30 });
+// result: { name: string; age: number }
+```
+
 ---
 
 ## 1️⃣3️⃣ Utility Types 🛠️
@@ -1818,11 +2080,987 @@ type PatchPayload = Partial<Pick<User, "name" | "email">>; // only these two pat
 
 ---
 
+## 1️⃣4️⃣ Conditional Types 🔀
+
+> **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** A conditional type is TypeScript's ternary operator for types: `T extends U ? X : Y`. It reads: "If `T` is assignable to `U`, the type is `X`; otherwise it's `Y`." This is the engine behind many built-in utility types.
+
+**বাংলা:** Conditional type হলো TypeScript-এর type-level ternary: `T extends U ? X : Y`। অর্থাৎ "`T` যদি `U`-তে assignable হয়, type হবে `X`; নাহলে `Y`।" অনেক built-in utility type-এর ভেতরে এটাই কাজ করে।
+
+### Code Example
+
+```ts
+// Basic conditional type
+type IsString<T> = T extends string ? "yes" : "no";
+
+type A = IsString<string>; // "yes"
+type B = IsString<number>; // "no"
+type C = IsString<"hello">; // "yes" — literal string extends string
+
+// Practical: filter only non-nullable values
+type NonNullable2<T> = T extends null | undefined ? never : T;
+
+type D = NonNullable2<string | null | undefined>; // string
+
+// Distributive conditional types — applied to each union member
+type Flatten<T> = T extends Array<infer Item> ? Item : T;
+
+type E = Flatten<string[]>; // string
+type F = Flatten<number[]>; // number
+type G = Flatten<string>; // string (not an array, returned as-is)
+
+// Conditional type with extends on objects
+type HasId<T> = T extends { id: number } ? "has id" : "no id";
+
+type H = HasId<{ id: number; name: string }>; // "has id"
+type I = HasId<{ name: string }>; // "no id"
+
+// Used for extracting return types (how ReturnType<> works internally)
+type MyReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+
+function greet(name: string): string {
+  return `Hello, ${name}`;
+}
+
+type GreetReturn = MyReturnType<typeof greet>; // string
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- `T extends U ? X : Y` is evaluated at the **type level** — no runtime code is generated.
+- When `T` is a **union**, the condition is distributed over each member separately (distributive behaviour).
+- `infer` lets you capture and name a type **within** a conditional type — more on this below.
+- Conditional types power `NonNullable`, `ReturnType`, `Parameters`, `Awaited`, and many more built-in utilities.
+
+**বাংলা:**
+
+- `T extends U ? X : Y` **type level**-এ evaluate হয় — runtime-এ কোনো code তৈরি হয় না।
+- `T` যখন **union**, তখন condition প্রতিটি member-এ আলাদাভাবে distribute হয়।
+- `infer` conditional type-এর **ভেতরে** একটি type capture ও নাম দিতে দেয়।
+- `NonNullable`, `ReturnType`, `Parameters`, `Awaited` — এই built-in utility-গুলো conditional type দিয়ে তৈরি।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: using conditional type where a simple generic constraint works
+type StringOnly<T extends string> = T; // simpler!
+// Don't write: type StringOnly<T> = T extends string ? T : never;
+
+// ❌ Wrong: forgetting union distribution
+type IsArray<T> = T extends any[] ? true : false;
+type X = IsArray<string | number[]>; // boolean (true | false), not just true!
+// Each union member is checked separately: string → false, number[] → true
+
+// ✅ Wrap in a tuple to disable distribution
+type IsArrayExact<T> = [T] extends [any[]] ? true : false;
+type Y = IsArrayExact<string | number[]>; // false (the whole union is checked)
+```
+
+### ⚡ Quick Quiz
+
+Write a conditional type `Unpromise<T>` that extracts the resolved type from a `Promise`.
+
+```ts
+// Answer:
+type Unpromise<T> = T extends Promise<infer R> ? R : T;
+
+type A = Unpromise<Promise<string>>; // string
+type B = Unpromise<Promise<number>>; // number
+type C = Unpromise<string>; // string (not a Promise, returned as-is)
+```
+
+### 🔍 The `infer` Keyword
+
+`infer` is only valid **inside** a conditional type. It creates a new type variable that TypeScript fills in based on the structure of the matched type.
+
+`infer` শুধুমাত্র conditional type-এর **ভেতরে** valid। এটি একটি নতুন type variable তৈরি করে যা TypeScript matched type-এর structure থেকে পূরণ করে।
+
+```ts
+// Extract the element type of an array
+type ElementType<T> = T extends (infer E)[] ? E : never;
+
+type N = ElementType<number[]>; // number
+type S = ElementType<string[]>; // string
+type X = ElementType<string>; // never (not an array)
+
+// Extract the first parameter type of a function
+type FirstParam<T> = T extends (first: infer P, ...rest: any[]) => any
+  ? P
+  : never;
+
+type F = FirstParam<(name: string, age: number) => void>; // string
+type G = FirstParam<() => void>; // never
+
+// Rebuild built-in ReturnType
+type ReturnType2<T extends (...args: any) => any> = T extends (
+  ...args: any
+) => infer R
+  ? R
+  : any;
+
+function add(a: number, b: number): number {
+  return a + b;
+}
+type AddReturn = ReturnType2<typeof add>; // number
+
+// Rebuild built-in Parameters
+type Parameters2<T extends (...args: any) => any> = T extends (
+  ...args: infer P
+) => any
+  ? P
+  : never;
+
+type AddParams = Parameters2<typeof add>; // [a: number, b: number]
+```
+
+**English:** Think of `infer R` as "let TypeScript figure out what `R` is and bind it as a usable name." It's the mechanism behind `ReturnType`, `Parameters`, `InstanceType`, and `Awaited`.
+
+**বাংলা:** `infer R` মানে "TypeScript নিজে বের করুক `R` কী, এবং সেটা একটি usable নাম হিসেবে bind হোক।" এটাই `ReturnType`, `Parameters`, `InstanceType`, এবং `Awaited`-এর mechanism।
+
+---
+
+## 1️⃣5️⃣ Mapped Types 🗺️
+
+> **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** A mapped type iterates over the keys of an existing type and transforms each property. It's how TypeScript builds `Partial<T>`, `Readonly<T>`, `Required<T>`, and `Record<K, V>` internally — and you can write your own.
+
+**বাংলা:** Mapped type একটি existing type-এর সব key-এ iterate করে প্রতিটি property transform করে। TypeScript ভেতরে `Partial<T>`, `Readonly<T>`, `Required<T>`, `Record<K, V>` এভাবেই তৈরি করে — এবং আপনিও নিজের মতো লিখতে পারেন।
+
+### Code Example
+
+```ts
+// Basic mapped type — iterate over keys of T and transform each property
+type Stringify<T> = {
+  [K in keyof T]: string; // every property becomes string
+};
+
+type User = { id: number; name: string; active: boolean };
+type StringifiedUser = Stringify<User>;
+// { id: string; name: string; active: string }
+
+// Adding modifiers — readonly and optional
+type Immutable<T> = {
+  readonly [K in keyof T]: T[K]; // same as Readonly<T>
+};
+
+type Optional<T> = {
+  [K in keyof T]?: T[K]; // same as Partial<T>
+};
+
+// Removing modifiers — the '-' prefix removes readonly or optional
+type Mutable<T> = {
+  -readonly [K in keyof T]: T[K]; // removes readonly
+};
+
+type Required2<T> = {
+  [K in keyof T]-?: T[K]; // removes optional (same as Required<T>)
+};
+
+// Remapping keys — use 'as' to rename keys
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
+};
+
+type PersonGetters = Getters<{ name: string; age: number }>;
+// { getName: () => string; getAge: () => number }
+
+// Filtering keys — use 'never' to exclude certain properties
+type StringProps<T> = {
+  [K in keyof T as T[K] extends string ? K : never]: T[K];
+};
+
+type OnlyStrings = StringProps<{ id: number; name: string; email: string }>;
+// { name: string; email: string }
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- `[K in keyof T]` iterates over every key of `T` — the foundation of all mapped types.
+- `T[K]` is the **indexed access type** — look up the type of property `K` in `T`.
+- `+` adds a modifier (default), `-` removes it. So `-readonly` makes a type mutable.
+- `as NewKey` (TypeScript 4.1+) lets you **remap** keys — great for generating getter/setter names.
+- Returning `never` from the `as` clause **filters out** that key entirely.
+
+**বাংলা:**
+
+- `[K in keyof T]` `T`-এর প্রতিটি key-এ iterate করে — সব mapped type-এর ভিত্তি।
+- `T[K]` হলো **indexed access type** — `T`-এর `K` property-র type lookup করে।
+- `+` modifier যোগ করে (default), `-` সরায়। তাই `-readonly` type-কে mutable করে।
+- `as NewKey` (TypeScript 4.1+) দিয়ে key **remap** করা যায় — getter/setter নাম তৈরিতে দারুণ।
+- `as` clause থেকে `never` return করলে সেই key সম্পূর্ণ **বাদ** পড়ে যায়।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: forgetting T[K] and using a fixed type — all props become that type
+type Bad<T> = { [K in keyof T]: string }; // loses original types!
+
+// ✅ Correct: preserve original types
+type Good<T> = { [K in keyof T]: T[K] }; // same as T (identity mapped type)
+
+// ❌ Wrong: using mapped type where a utility type already exists
+type MyPartial<T> = { [K in keyof T]?: T[K] };
+// Just use: Partial<T>
+
+// ❌ Wrong: trying to map over a union of strings without wrapping
+type Flags = { [K in "a" | "b" | "c"]: boolean };
+// This is actually ✅ CORRECT — mapping over a string union is valid!
+// { a: boolean; b: boolean; c: boolean }
+```
+
+### ⚡ Quick Quiz
+
+Create a mapped type `Nullable<T>` that makes every property of `T` accept `null`.
+
+```ts
+// Answer:
+type Nullable<T> = {
+  [K in keyof T]: T[K] | null;
+};
+
+type NullableUser = Nullable<{ id: number; name: string }>;
+// { id: number | null; name: string | null }
+```
+
+---
+
+## 1️⃣6️⃣ Template Literal Types 📝
+
+> **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** Template literal types (TypeScript 4.1+) let you build new string types by combining existing ones — the same `` `${...}` `` syntax you use at runtime, but at the type level.
+
+**বাংলা:** Template literal type (TypeScript 4.1+) দিয়ে existing type combine করে নতুন string type তৈরি করা যায় — runtime-এ `` `${...}` `` যেভাবে ব্যবহার করেন সেই syntax, কিন্তু type level-এ।
+
+### Code Example
+
+```ts
+// Basic template literal type
+type Greeting = `Hello, ${string}!`;
+const g1: Greeting = "Hello, Alice!"; // ✅
+// const g2: Greeting = "Hi, Alice!"; // ❌ must start with "Hello, "
+
+// Combining literal unions — cartesian product!
+type Direction = "top" | "bottom" | "left" | "right";
+type CSSProperty = `margin-${Direction}` | `padding-${Direction}`;
+// "margin-top" | "margin-bottom" | "margin-left" | "margin-right"
+// | "padding-top" | "padding-bottom" | "padding-left" | "padding-right"
+
+const css: CSSProperty = "margin-top"; // ✅
+// const bad: CSSProperty = "border-top"; // ❌
+
+// Event name builder — type-safe DOM events
+type EventName<T extends string> = `on${Capitalize<T>}`;
+type ClickEvent = EventName<"click">; // "onClick"
+type HoverEvent = EventName<"hover">; // "onHover"
+
+// Getter/Setter name generation (combined with mapped types)
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
+};
+
+type UserGetters = Getters<{ name: string; age: number }>;
+// { getName: () => string; getAge: () => number }
+
+// TypeScript's built-in string manipulation types
+type A = Uppercase<"hello">; // "HELLO"
+type B = Lowercase<"WORLD">; // "world"
+type C = Capitalize<"typescript">; // "Typescript"
+type D = Uncapitalize<"TypeScript">; // "typeScript"
+
+// Practical: type-safe route builder
+type Route = "/users" | "/posts" | "/comments";
+type ApiRoute = `/api${Route}`;
+// "/api/users" | "/api/posts" | "/api/comments"
+
+function fetchApi(route: ApiRoute): Promise<unknown> {
+  return fetch(route).then((r) => r.json());
+}
+
+fetchApi("/api/users"); // ✅
+// fetchApi("/users");    // ❌ Error: must be prefixed with "/api"
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- Template literal types distribute over unions — `"a" | "b"` combined with `"x" | "y"` produces all four combinations.
+- `Capitalize`, `Uncapitalize`, `Uppercase`, `Lowercase` are built-in string manipulation types.
+- Most powerful when combined with mapped types and `infer` to build type-safe string APIs.
+- At runtime these are just strings — the template literal syntax is **erased** by the compiler.
+
+**বাংলা:**
+
+- Template literal type union-এ distribute করে — `"a" | "b"` এবং `"x" | "y"` মিলিয়ে চারটি combination তৈরি হয়।
+- `Capitalize`, `Uncapitalize`, `Uppercase`, `Lowercase` — built-in string manipulation type।
+- Mapped type এবং `infer`-এর সাথে মিলিয়ে type-safe string API তৈরিতে সবচেয়ে শক্তিশালী।
+- Runtime-এ এগুলো শুধু string — template literal syntax compiler দ্বারা **erased** হয়।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: using string in template literal loses literal types
+type EventMap = { [K in `on${string}`]: () => void };
+// Too broad — "onAnything" would match
+
+// ✅ Correct: constrain to a specific union
+type Events = "click" | "hover" | "focus";
+type EventMap2 = { [K in `on${Capitalize<Events>}`]: () => void };
+// { onClick: () => void; onHover: () => void; onFocus: () => void }
+```
+
+### ⚡ Quick Quiz
+
+Create a type `CSSValue` that accepts any string like `"100px"`, `"2rem"`, `"50%"` by combining a number string with a unit.
+
+```ts
+// Answer:
+type Unit = "px" | "rem" | "em" | "%";
+type CSSValue = `${number}${Unit}`;
+
+const a: CSSValue = "100px"; // ✅
+const b: CSSValue = "2rem"; // ✅
+// const c: CSSValue = "auto"; // ❌ — must end with a unit
+```
+
+---
+
+## 1️⃣7️⃣ `satisfies` Operator ✔️
+
+> **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** The `satisfies` operator (TypeScript 4.9+) validates that a value matches a type **without widening its inferred type**. It's like a type check you can attach to an expression while keeping all the literal type information.
+
+**বাংলা:** `satisfies` operator (TypeScript 4.9+) একটি value-কে type-এর বিপরীতে validate করে — কিন্তু inferred type কে **wide করে না**। এটি একটি expression-এ type check লাগানোর উপায় যেখানে literal type information হারায় না।
+
+### Code Example
+
+```ts
+type Palette = Record<string, [number, number, number] | string>;
+
+// Without satisfies — type widened, literal access lost
+const colors1: Palette = {
+  red: [255, 0, 0],
+  green: "#00ff00",
+};
+// colors1.red is `[number, number, number] | string` — TS doesn't know it's the tuple form
+
+// With satisfies — shape validated, literal types PRESERVED
+const colors2 = {
+  red: [255, 0, 0],
+  green: "#00ff00",
+} satisfies Palette;
+
+colors2.red[0]; // ✅ TypeScript knows it's a tuple — access index 0
+colors2.green.toUpperCase(); // ✅ TypeScript knows it's a string
+
+// Practical: config objects with strict shape validation
+type Config = {
+  port: number;
+  host: string;
+  debug: boolean;
+};
+
+const config = {
+  port: 3000,
+  host: "localhost",
+  debug: false,
+  extra: "oops", // ❌ Error: 'extra' is not in Config — caught!
+} satisfies Config;
+
+config.port; // type: 3000 (literal!) — not widened to `number`
+
+// Catch typos in keys at definition time
+type Routes = Record<"home" | "about" | "contact", string>;
+
+const routes = {
+  home: "/",
+  about: "/about",
+  contakt: "/contact", // ❌ Error: 'contakt' is not in Routes — typo caught!
+} satisfies Routes;
+```
+
+### Explanation | ব্যাখ্যา
+
+**English:**
+
+- `value satisfies Type` — TypeScript checks the shape but **infers the narrowest possible type** for the variable.
+- With `: Type` annotation, TypeScript **widens** the type to `Type` — literal types are lost.
+- Use `satisfies` when you need both: shape validation AND narrow literal inference (e.g. config objects, style maps, route tables).
+
+**বাংলা:**
+
+- `value satisfies Type` — TypeScript shape check করে কিন্তু variable-এর জন্য **সবচেয়ে narrow type infer** করে।
+- `: Type` annotation দিলে TypeScript type-কে `Type`-এ **wide** করে — literal type হারিয়ে যায়।
+- `satisfies` ব্যবহার করুন যখন দুটোই দরকার: shape validation এবং narrow literal inference (যেমন config object, style map, route table)।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: using 'as' instead of satisfies — no shape validation
+const cfg = { port: 3000, typo: true } as Config; // no error for 'typo'!
+
+// ❌ Wrong: using annotation instead of satisfies — loses literals
+const cfg2: Config = { port: 3000, host: "localhost", debug: false };
+cfg2.port; // type: number — literal 3000 is gone
+
+// ✅ Correct: satisfies validates + preserves
+const cfg3 = { port: 3000, host: "localhost", debug: false } satisfies Config;
+cfg3.port; // type: 3000 ✅
+```
+
+### ⚡ Quick Quiz
+
+You have a `type Theme = { bg: string; fg: string }`. Use `satisfies` so that the inferred type of `bg` is the literal `"#fff"`, not just `string`.
+
+```ts
+// Answer:
+type Theme = { bg: string; fg: string };
+
+const theme = {
+  bg: "#fff",
+  fg: "#000",
+} satisfies Theme;
+
+theme.bg; // type: "#fff" — literal preserved ✅
+```
+
+---
+
+## 1️⃣8️⃣ Indexed Access Types 🔑
+
+> **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** Indexed access types let you look up the type of a specific property using `T[K]` syntax — just like accessing an object property at runtime, but at the type level.
+
+**বাংলা:** Indexed access type দিয়ে `T[K]` syntax ব্যবহার করে একটি নির্দিষ্ট property-র type lookup করা যায় — runtime-এ object property access করার মতো, কিন্তু type level-এ।
+
+### Code Example
+
+```ts
+// Basic indexed access — look up a property's type
+type User = { id: number; name: string; email: string; active: boolean };
+
+type IdType = User["id"]; // number
+type NameType = User["name"]; // string
+type ActiveType = User["active"]; // boolean
+
+// Union of keys — get a union of property types
+type StringFields = User["name" | "email"]; // string | string → string
+
+// keyof T — get ALL property types as a union
+type AllFieldTypes = User[keyof User]; // number | string | boolean
+
+// Array element type — index with 'number'
+type Fruits = ("apple" | "banana" | "orange")[];
+type Fruit = Fruits[number]; // "apple" | "banana" | "orange"
+
+// Nested indexed access
+type Config = {
+  server: {
+    host: string;
+    port: number;
+  };
+  db: {
+    url: string;
+  };
+};
+
+type ServerHost = Config["server"]["host"]; // string
+type DbUrl = Config["db"]["url"]; // string
+
+// Practical: ensuring a function accepts valid event names
+const events = {
+  click: (e: MouseEvent) => {},
+  keyup: (e: KeyboardEvent) => {},
+  resize: (e: UIEvent) => {},
+} as const;
+
+type EventKey = keyof typeof events; // "click" | "keyup" | "resize"
+type EventHandlers = (typeof events)[EventKey]; // union of all handler fn types
+
+// Used in generics — T[K] with constraint K extends keyof T
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+
+const users = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" },
+];
+
+const ids = pluck(users, "id"); // number[]  ✅
+const names = pluck(users, "name"); // string[]  ✅
+// pluck(users, "age");              // ❌ Error: "age" not in typeof users[0]
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- `T["key"]` is the indexed access type — it gives you the type of that property in `T`.
+- `T[keyof T]` gives a union of **all** property value types in `T`.
+- `T[number]` on an array type gives the **element type** of the array.
+- Chaining works: `Config["server"]["host"]` drills into nested objects.
+- Combined with generics (`T[K]` where `K extends keyof T`), this enables fully type-safe property access.
+
+**বাংলা:**
+
+- `T["key"]` হলো indexed access type — `T`-এর সেই property-র type দেয়।
+- `T[keyof T]` `T`-এর সব property value type-এর **union** দেয়।
+- Array type-এ `T[number]` ব্যবহার করলে array-এর **element type** পাওয়া যায়।
+- Chain করা যায়: `Config["server"]["host"]` nested object-এ drill করে।
+- Generic-এর সাথে (`T[K]` যেখানে `K extends keyof T`) মিলিয়ে সম্পূর্ণ type-safe property access সম্ভব।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: using T[string] — too broad
+type AnyProp<T> = T[string]; // Error unless T has an index signature
+
+// ✅ Correct: use T[keyof T] for all value types
+type AllValues<T> = T[keyof T];
+
+// ❌ Wrong: indexed access on a non-existent key
+type Bad = User["nickname"]; // ❌ Error: 'nickname' not in User
+
+// ✅ Correct: only valid keys work
+type Good = User["name"]; // string ✅
+```
+
+### ⚡ Quick Quiz
+
+Given `type Order = { id: number; items: string[]; total: number }`, what is the type of `Order["items"][number]`?
+
+```ts
+// Answer:
+type Order = { id: number; items: string[]; total: number };
+type ItemType = Order["items"][number]; // string
+// Order["items"] is string[], and string[][number] gives the element type: string
+```
+
+---
+
 # 🌳 Phase 3 — Safety & Patterns
 
 ---
 
-## 1️⃣4️⃣ Type Assertion 🧭
+## 1️⃣9️⃣ Classes 🏛️
+
+> **Level:** Intermediate 🌳
+
+### Concept | ধারণা
+
+**English:** TypeScript adds type annotations to JavaScript classes — making constructors, methods, and properties fully type-safe. Access modifiers (`public`, `private`, `protected`), `readonly`, `static`, and `abstract` give you fine-grained control over how class members can be used.
+
+**বাংলা:** TypeScript JavaScript class-এ type annotation যোগ করে — constructor, method এবং property সম্পূর্ণ type-safe করে তোলে। Access modifier (`public`, `private`, `protected`), `readonly`, `static`, এবং `abstract` দিয়ে class member কীভাবে ব্যবহার হবে তা নিয়ন্ত্রণ করা যায়।
+
+### Code Example
+
+```ts
+// Basic class with typed properties and constructor shorthand
+class Animal {
+  readonly name: string; // immutable after construction
+  private speed: number; // only accessible within this class
+  protected alive: boolean; // accessible in this class + subclasses
+
+  constructor(name: string, speed: number) {
+    this.name = name;
+    this.speed = speed;
+    this.alive = true;
+  }
+
+  move(): string {
+    return `${this.name} moves at ${this.speed} km/h`;
+  }
+}
+
+// Constructor shorthand — declare + assign in one shot
+class Point {
+  constructor(
+    public x: number, // public + assign
+    public y: number, // public + assign
+  ) {}
+
+  distanceTo(other: Point): number {
+    return Math.hypot(this.x - other.x, this.y - other.y);
+  }
+}
+
+const p1 = new Point(0, 0);
+const p2 = new Point(3, 4);
+console.log(p1.distanceTo(p2)); // 5
+
+// Inheritance + protected access
+class Dog extends Animal {
+  breed: string;
+
+  constructor(name: string, breed: string) {
+    super(name, 40); // call parent constructor
+    this.breed = breed;
+    this.alive = true; // ✅ protected — accessible in subclass
+    // this.speed = 50;    // ❌ private — NOT accessible in subclass
+  }
+
+  bark(): string {
+    return this.alive ? `${this.name} barks!` : "...";
+  }
+}
+
+const dog = new Dog("Rex", "Labrador");
+console.log(dog.bark()); // "Rex barks!"
+// dog.alive             // ❌ Error: 'alive' is protected
+
+// Static members — belong to the class, not instances
+class MathUtils {
+  static readonly PI = 3.14159;
+
+  static circleArea(radius: number): number {
+    return MathUtils.PI * radius * radius;
+  }
+}
+
+console.log(MathUtils.circleArea(5)); // 78.53975
+// new MathUtils().PI                 // ❌ PI is static, not on instances
+
+// Abstract class — cannot be instantiated directly
+abstract class Shape {
+  abstract area(): number; // subclasses MUST implement this
+  abstract perimeter(): number;
+
+  describe(): string {
+    return `Area: ${this.area().toFixed(2)}, Perimeter: ${this.perimeter().toFixed(2)}`;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super();
+  }
+  area() {
+    return Math.PI * this.radius ** 2;
+  }
+  perimeter() {
+    return 2 * Math.PI * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(
+    private w: number,
+    private h: number,
+  ) {
+    super();
+  }
+  area() {
+    return this.w * this.h;
+  }
+  perimeter() {
+    return 2 * (this.w + this.h);
+  }
+}
+
+const shapes: Shape[] = [new Circle(5), new Rectangle(4, 6)];
+shapes.forEach((s) => console.log(s.describe()));
+
+// implements — class must satisfy an interface's shape
+interface Serializable {
+  serialize(): string;
+  deserialize(data: string): void;
+}
+
+class Config implements Serializable {
+  private data: Record<string, unknown> = {};
+
+  serialize(): string {
+    return JSON.stringify(this.data);
+  }
+
+  deserialize(data: string): void {
+    this.data = JSON.parse(data) as Record<string, unknown>;
+  }
+}
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- `public` (default): accessible anywhere. `private`: only inside the class. `protected`: inside the class and subclasses.
+- Constructor shorthand (`public x: number` in params) declares AND assigns in one step.
+- `readonly` prevents reassignment after construction — great for IDs, names, etc.
+- `static` members belong to the class itself, not to instances.
+- `abstract` classes define a contract — they can't be instantiated, but provide shared logic for subclasses.
+- `implements` enforces that a class satisfies an interface's shape.
+
+**বাংলা:**
+
+- `public` (default): যেকোনো জায়গা থেকে accessible। `private`: শুধু class-এর ভেতরে। `protected`: class ও subclass-এর ভেতরে।
+- Constructor shorthand (`public x: number` parameter-এ) একসাথে declare ও assign করে।
+- `readonly` construction-এর পরে reassign করতে দেয় না — ID, name-এর জন্য দারুণ।
+- `static` member class-এর নিজের — instance-এর নয়।
+- `abstract` class একটি contract define করে — instantiate করা যায় না, কিন্তু subclass-এর জন্য shared logic থাকে।
+- `implements` নিশ্চিত করে যে class একটি interface-এর shape পূরণ করে।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: accessing private member from subclass
+class Parent {
+  private secret = 42;
+}
+class Child extends Parent {
+  getSecret() {
+    return this.secret; // ❌ Error: 'secret' is private
+  }
+}
+
+// ✅ Correct: use protected if subclasses need access
+class Parent2 {
+  protected secret = 42;
+}
+class Child2 extends Parent2 {
+  getSecret() {
+    return this.secret;
+  } // ✅
+}
+
+// ❌ Wrong: forgetting to call super() before using 'this' in subclass
+class Animal2 {
+  constructor(public name: string) {}
+}
+class Dog2 extends Animal2 {
+  constructor(
+    name: string,
+    public breed: string,
+  ) {
+    // this.breed = breed; // ❌ Error: must call super() first
+    super(name);
+    // this.breed = breed; // ✅ now it's fine (but shorthand is cleaner)
+  }
+}
+
+// ❌ Wrong: instantiating an abstract class
+abstract class Base {
+  abstract run(): void;
+}
+// const b = new Base(); // ❌ Error: cannot create instance of abstract class
+```
+
+### ⚡ Quick Quiz
+
+Create a `BankAccount` class with `private balance`, a `deposit(amount: number)` method, and a `getBalance()` getter. Make `owner` readonly.
+
+```ts
+// Answer:
+class BankAccount {
+  private balance: number = 0;
+
+  constructor(readonly owner: string) {}
+
+  deposit(amount: number): void {
+    if (amount > 0) this.balance += amount;
+  }
+
+  withdraw(amount: number): boolean {
+    if (amount > this.balance) return false;
+    this.balance -= amount;
+    return true;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+
+const acc = new BankAccount("Alice");
+acc.deposit(100);
+console.log(acc.getBalance()); // 100
+console.log(acc.owner); // "Alice" (readonly)
+// acc.balance                 // ❌ private
+```
+
+---
+
+## 2️⃣0️⃣ Async/Await & Promise Typing ⚡
+
+> **Level:** Intermediate 🌳
+
+### Concept | ধারণা
+
+**English:** TypeScript fully types asynchronous code. An `async` function always returns `Promise<T>`, where `T` is the type of the awaited value. You can type `Promise.all`, catch errors properly with `unknown`, and express complex async flows with full type safety.
+
+**বাংলা:** TypeScript asynchronous code সম্পূর্ণরূপে type করে। `async` function সবসময় `Promise<T>` return করে, যেখানে `T` হলো awaited value-এর type। `Promise.all` type করা, `unknown` দিয়ে error properly catch করা, এবং complex async flow সম্পূর্ণ type safety সহ লেখা সম্ভব।
+
+### Code Example
+
+```ts
+// async function return type — always Promise<T>
+async function fetchUser(id: number): Promise<{ id: number; name: string }> {
+  const response = await fetch(`/api/users/${id}`);
+  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+  return response.json() as Promise<{ id: number; name: string }>;
+}
+
+// Explicitly typed — makes the return contract clear
+async function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Awaited<T> — extracts the resolved type from a Promise
+type UserData = Awaited<ReturnType<typeof fetchUser>>;
+// { id: number; name: string }
+
+// Error handling — catch block receives 'unknown', not 'Error'
+async function safeFetch(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    return await response.text();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(error.message); // ✅ safe to access .message
+    }
+    return null;
+  }
+}
+
+// Promise.all — tuple type for heterogeneous promises
+async function loadAll() {
+  const [user, posts] = await Promise.all([
+    fetchUser(1), // Promise<{id,name}>
+    fetch("/api/posts").then((r) => r.json() as Promise<string[]>), // Promise<string[]>
+  ]);
+  // user: { id: number; name: string }
+  // posts: string[]
+}
+
+// Generic async utility
+async function retry<T>(fn: () => Promise<T>, attempts: number): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+// Using it:
+const user = await retry(() => fetchUser(1), 3);
+// user: { id: number; name: string }
+
+// Promise.allSettled — all results, including failures
+async function fetchAll(ids: number[]) {
+  const results = await Promise.allSettled(ids.map(fetchUser));
+  // results: PromiseSettledResult<{ id: number; name: string }>[]
+
+  results.forEach((result) => {
+    if (result.status === "fulfilled") {
+      console.log(result.value.name); // ✅ narrowed to fulfilled
+    } else {
+      console.error(result.reason); // ✅ narrowed to rejected
+    }
+  });
+}
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- Every `async` function returns `Promise<T>` — TypeScript infers `T` from the returned value.
+- `Awaited<T>` unwraps nested promises: `Awaited<Promise<Promise<string>>>` → `string`.
+- Catch blocks receive `unknown` (not `Error`) — always narrow with `instanceof Error` before accessing properties.
+- `Promise.all([p1, p2])` infers a **tuple** type matching the input array.
+- `ReturnType<typeof fn>` + `Awaited<>` is the standard way to extract the resolved type of an async function.
+
+**বাংলা:**
+
+- প্রতিটি `async` function `Promise<T>` return করে — TypeScript returned value থেকে `T` infer করে।
+- `Awaited<T>` nested promise unwrap করে: `Awaited<Promise<Promise<string>>>` → `string`।
+- Catch block `unknown` receive করে (`Error` নয়) — property access করার আগে সবসময় `instanceof Error` দিয়ে narrow করুন।
+- `Promise.all([p1, p2])` input array-এর সাথে মিলিয়ে একটি **tuple** type infer করে।
+- `ReturnType<typeof fn>` + `Awaited<>` হলো async function-এর resolved type বের করার standard উপায়।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: not typing catch block — error is 'any'
+try {
+  await fetch("/api");
+} catch (e) {
+  console.log(e.message); // ❌ unsafe — e is 'any' implicitly
+}
+
+// ✅ Correct: type catch as unknown, then narrow
+try {
+  await fetch("/api");
+} catch (e: unknown) {
+  if (e instanceof Error) console.log(e.message); // ✅
+}
+
+// ❌ Wrong: forgetting await — promise is not resolved
+async function load() {
+  const data = fetch("/api/data"); // ❌ data is Promise<Response>, not Response
+  console.log(data.status); // ❌ Promise has no 'status' directly
+}
+
+// ✅ Correct: await the fetch
+async function load2() {
+  const data = await fetch("/api/data"); // ✅ data is Response
+  console.log(data.status);
+}
+
+// ❌ Wrong: using Promise<any> — loses type safety
+async function bad(): Promise<any> {
+  return fetch("/api").then((r) => r.json()); // ❌ returns any
+}
+
+// ✅ Correct: use a specific return type
+async function good(): Promise<{ id: number }[]> {
+  return fetch("/api").then((r) => r.json() as Promise<{ id: number }[]>);
+}
+```
+
+### ⚡ Quick Quiz
+
+Write a typed `sleep` utility and a `fetchWithTimeout` that rejects after `ms` milliseconds.
+
+```ts
+// Answer:
+function sleep(ms: number): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms),
+  );
+}
+
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  return Promise.race([fetch(url), sleep(ms)]);
+}
+```
+
+---
+
+## 2️⃣1️⃣ Type Assertion 🧭
 
 > **File:** `src/typeAssertion.ts` | **Level:** Intermediate 🌳
 
@@ -1951,7 +3189,7 @@ config2.port; // type: number — literal 3000 is gone
 
 ---
 
-## 1️⃣5️⃣ Nullable / undefined / unknown / never 🧯
+## 2️⃣2️⃣ Nullable / undefined / unknown / never 🧯
 
 > **File:** `src/nullableUdefinedNever.ts` | **Level:** Intermediate 🌳
 
@@ -2154,7 +3392,7 @@ function getArea(shape: Shape): number {
 
 ---
 
-## 1️⃣6️⃣ Destructuring 🎯
+## 2️⃣3️⃣ Destructuring 🎯
 
 > **File:** `src/destructuring.ts` | **Level:** Intermediate 🌳
 
@@ -2246,7 +3484,7 @@ console.log(item, count); // "book" 3
 
 ---
 
-## 1️⃣7️⃣ Spread & Rest 🪄
+## 2️⃣4️⃣ Spread & Rest 🪄
 
 > **File:** `src/SpreadAndRest.ts` | **Level:** Intermediate 🌳
 
@@ -2353,7 +3591,7 @@ console.log(mergeArrays([1, 2], [3, 4])); // [1, 2, 3, 4]
 
 ---
 
-## 1️⃣8️⃣ Test & Practice ✅
+## 2️⃣5️⃣ Test & Practice ✅
 
 > **File:** `src/test.ts` | **Level:** All Levels 🎓
 
@@ -2374,22 +3612,33 @@ console.log(hello);
 
 Try these in `test.ts` to solidify everything you've learned:
 
-| #   | Challenge                                                                | Concepts Used           |
-| --- | ------------------------------------------------------------------------ | ----------------------- |
-| 1   | Create a `Product` type with `id`, `title`, `price`, optional `discount` | Type alias, optional    |
-| 2   | Write a function that accepts `unknown` price and returns 10% off        | unknown, type guard     |
-| 3   | Model a `Payment` union as either `CashPayment` or `CardPayment`         | Discriminated union     |
-| 4   | Write a `mergeUsers` function using spread                               | Spread, generics        |
-| 5   | Destructure a nested order object with renaming                          | Destructuring, aliasing |
-| 6   | Write a rest-param function that sums all numbers                        | Rest, typed params      |
-| 7   | Create an `Employee` interface extending a `Person` interface            | Interface, extends      |
-| 8   | Decide: `type` or `interface` for a `Vehicle` shape you'll extend        | Alias vs Interface      |
-| 9   | Write a `safeParse<T>` generic function that returns `T \| null`         | Generics                |
-| 10  | Use `Partial<T>` to create an update payload for your `Product` type     | Utility Types           |
-| 11  | Use `Omit` to create a `PublicUser` that strips `password`               | Utility Types           |
-| 12  | Write a type-safe `getProperty` function using `keyof`                   | keyof & generics        |
-| 13  | Create a string enum `Season` and a function that returns its length     | Enums                   |
-| 14  | Write a custom type guard `isDate` that checks for `Date` instances      | Type Guards             |
+| #   | Challenge                                                                                               | Concepts Used                 |
+| --- | ------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| 1   | Create a `Product` type with `id`, `title`, `price`, optional `discount`                                | Type alias, optional          |
+| 2   | Write a function that accepts `unknown` price and returns 10% off                                       | unknown, type guard           |
+| 3   | Model a `Payment` union as either `CashPayment` or `CardPayment`                                        | Discriminated union           |
+| 4   | Write a `mergeUsers` function using spread                                                              | Spread, generics              |
+| 5   | Destructure a nested order object with renaming                                                         | Destructuring, aliasing       |
+| 6   | Write a rest-param function that sums all numbers                                                       | Rest, typed params            |
+| 7   | Create an `Employee` interface extending a `Person` interface                                           | Interface, extends            |
+| 8   | Decide: `type` or `interface` for a `Vehicle` shape you'll extend                                       | Alias vs Interface            |
+| 9   | Write a `safeParse<T>` generic function that returns `T \| null`                                        | Generics                      |
+| 10  | Use `Partial<T>` to create an update payload for your `Product` type                                    | Utility Types                 |
+| 11  | Use `Omit` to create a `PublicUser` that strips `password`                                              | Utility Types                 |
+| 12  | Write a type-safe `getProperty` function using `keyof`                                                  | keyof & generics              |
+| 13  | Create a string enum `Season` and a function that returns its length                                    | Enums                         |
+| 14  | Write a custom type guard `isDate` that checks for `Date` instances                                     | Type Guards                   |
+| 15  | Constrain a generic `clamp<T>` to only accept `number \| bigint`                                        | Generic Constraints           |
+| 16  | Write a labeled tuple `type RGB = [r: number, g: number, b: number]` and destructure it                 | Labeled Tuples                |
+| 17  | Create a function with overloads for `format(value: string)` and `format(value: number)`                | Function Overloads            |
+| 18  | Write a `Result<T>` discriminated union with `ok` and `error` variants                                  | Discriminated Unions          |
+| 19  | Build a `MyReturnType<T>` using conditional types + `infer`                                             | Conditional Types, infer      |
+| 20  | Create a `DeepReadonly<T>` using recursive mapped types                                                 | Mapped Types, Recursive Types |
+| 21  | Build a type `EventMap` from `"click" \| "hover" \| "focus"` → `"onClick" \| ...`                       | Template Literal Types        |
+| 22  | Use `satisfies` on a config object and verify literal types are preserved                               | `satisfies` Operator          |
+| 23  | Write `Lookup<T, K>` as an indexed access type and test it with a nested object                         | Indexed Access Types          |
+| 24  | Build a `BankAccount` class with `private balance`, `deposit`, `withdraw`, `readonly owner`             | Classes                       |
+| 25  | Write a `fetchJson<T>` async function with proper `Promise<T>` return type and `unknown` error handling | Async/Await                   |
 
 ### 💡 Pro Tips
 
