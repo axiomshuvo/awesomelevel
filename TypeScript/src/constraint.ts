@@ -46,9 +46,7 @@ const res6 = addConstrainedStudent(std3); // এই ক্ষেত্রে, st
 // এইভাবে, আমরা constraint ব্যবহার করে generic type কে নির্দিষ্ট ধরনের data type এর সাথে সীমাবদ্ধ করতে পারি,
 // যা আমাদের কোডকে আরও নিরাপদ এবং নির্ভরযোগ্য করে তোলে।
 
-// Keyof Constraint
-// keyof T দিয়ে T-এর সব key-এর union type পাওয়া যায়।
-// K extends keyof T মানে K অবশ্যই T-এর একটি valid key হতে হবে।
+// Keyof
 
 type RichPeopleVechicle = {
   car: string;
@@ -56,12 +54,26 @@ type RichPeopleVechicle = {
   yacht: string;
 };
 
-const getVehicle = <T, K extends keyof T>(obj: T, key: K): T[K] => {
-  return obj[key];
+type myVechicle = "car" | "bike" | "yacht";
+
+type myVechicle2 = keyof RichPeopleVechicle;
+// এই ক্ষেত্রে, myVechicle2 তে "car", "bike" এবং "yacht" থাকবে, কারণ এগুলো RichPeopleVechicle এর key।
+
+const mycar: myVechicle2 = "car"; // এই ক্ষেত্রে, mycar তে "car" থাকবে, কারণ এটি RichPeopleVechicle এর key এর মধ্যে একটি।
+const myyacht: myVechicle2 = "cng"; // এই ক্ষেত্রে, myyacht তে "cng" থাকবে না, কারণ এটি RichPeopleVechicle এর key এর মধ্যে নেই। তাই এটি একটি error হবে।
+
+// keyof constraint
+
+const user = {
+  name: "John Doe",
+  id: 12345,
+  address: {
+    city: "New York",
+    country: "USA",
+  },
+  age: 30,
 };
 
-const richGuy: RichPeopleVechicle = {
-  car: "Ferrari",
-  bike: "Ducati",
-  yacht: "Sunseeker",
-};
+//const myId = user.id; // এই ক্ষেত্রে, myId তে 12345 থাকবে, কারণ এটি user এর id property এর value।
+const myId = user["id"]; // এই ক্ষেত্রে ও , myId তে 12345 থাকবে, কারণ এটি user এর id property এর value।
+const myCity = user["address"]; // এই ক্ষেত্রে, myCity তে { city: "New York", country: "USA" } থাকবে, কারণ এটি user এর address property এর value।
