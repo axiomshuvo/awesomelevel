@@ -77,3 +77,10 @@ const user = {
 //const myId = user.id; // এই ক্ষেত্রে, myId তে 12345 থাকবে, কারণ এটি user এর id property এর value।
 const myId = user["id"]; // এই ক্ষেত্রে ও , myId তে 12345 থাকবে, কারণ এটি user এর id property এর value।
 const myCity = user["address"]; // এই ক্ষেত্রে, myCity তে { city: "New York", country: "USA" } থাকবে, কারণ এটি user এর address property এর value।
+
+console.log(myId); // এই ক্ষেত্রে, myId তে 12345 থাকবে।
+console.log(myCity); // এই ক্ষেত্রে, myId তে 12345 থাকবে এবং myCity তে { city: "New York", country: "USA" } থাকবে।
+
+const getPropertyFromObj = (obj: object, key: string) => {
+  return obj[key];
+};
