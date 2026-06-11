@@ -7,7 +7,21 @@ const UserRole = {
   Editor: "editor",
   Viewer: "viewer",
 } as const;
-// fixed string কে  literal type বলে ।
+
+/**
+ *
+ *  এই উদাহরণে, UserRole অবজেক্টটি "as const" ব্যবহার করে ডিফাইন করা হয়েছে, যার ফলে এর মানগুলি immutable হয়ে যায়।
+ *  Js e Covert হয় এইভাবে
+ *  {
+ *  readonly Admin: "admin",
+ *  readonly Editor: "editor",
+ *  readonly Viewer: "viewer"
+ * }
+ * এখানে , UserRole এর মানগুলি পরিবর্তন করা যাবে না এবং TypeScript এই অবজেক্টের মানগুলিকে নির্দিষ্ট টাইপ হিসেবে বিবেচনা করবে।
+ *
+ *
+ *
+ */
 
 const canEdit = (role: keyof typeof UserRole) => {
   if (role === UserRole.Admin || role === UserRole.Editor) {
