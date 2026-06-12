@@ -53,6 +53,8 @@ TypeScript/
     union.ts              ← Phase 2
     generic.ts            ← Phase 2.5
     constraint.ts         ← Phase 2.5
+    enum.ts               ← Phase 2.5
+    asconst.ts            ← Phase 2.5
     typeAssertion.ts      ← Phase 3
     nullableUdefinedNever.ts  ← Phase 3
     destructuring.ts      ← Phase 3
@@ -68,7 +70,7 @@ TypeScript/
 | ---------------- | ------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives (+ Literal Types, `readonly`, Labeled Tuples), Functions (+ Optional/Default Params, Overloads), `?` Operators                                                                                        |
 | **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias (+ Recursive Types), Interface (+ Array Interface), Union & Intersection (+ Discriminated Unions)                                                                                                                     |
-| **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics (+ Generic Constraints, Generic Classes), Utility Types, Conditional Types + `infer`, Mapped Types, Template Literal Types, `satisfies`, Indexed Access Types |
+| **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics (+ Generic Constraints, Generic Classes), Utility Types, Conditional Types + `infer`, Mapped Types, Template Literal Types, `satisfies`, Indexed Access Types, `as const` |
 | **Phase 3** 🌳   | Intermediate       | Classes, async patterns, safety & real-world use      | Classes, Async/Await & Promise Typing, Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest                                                                                                                      |
 | **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                                                                                                                                                                              |
 
@@ -1383,7 +1385,7 @@ if (isString(input)) {
 
 ## 1️⃣0️⃣ Enums 🔢
 
-> **Level:** Intermediate 💡
+> **File:** `src/enum.ts` | **Level:** Intermediate 💡
 
 ### Concept | ধারণা
 
@@ -2658,11 +2660,163 @@ type ItemType = Order["items"][number]; // string
 
 ---
 
+## 1️⃣9️⃣ `as const` Assertion 🔒
+
+> **File:** `src/asconst.ts` | **Level:** Intermediate 💡
+
+### Concept | ধারণা
+
+**English:** The `as const` assertion tells TypeScript to infer the **narrowest possible literal types** for a value and make every property `readonly`. Without it, TypeScript widens object property types to `string`, `number`, etc. With it, each value is locked to its exact literal — enabling type-safe patterns like value unions from objects.
+
+**বাংলা:** `as const` assertion TypeScript-কে বলে একটি value-এর জন্য **সবচেয়ে narrow literal type** infer করতে এবং প্রতিটি property `readonly` করতে। এটা ছাড়া TypeScript object property-র type `string`, `number` ইত্যাদিতে widen করে। এটা দিলে প্রতিটি value তার exact literal-এ আটকে যায় — যা object থেকে type-safe value union বের করার মতো pattern সম্ভব করে।
+
+### Code Example (from `src/asconst.ts`)
+
+```ts
+// Without as const — TypeScript widens to string
+const UserRoleWide = {
+  Admin: "admin",
+  Editor: "editor",
+  Viewer: "viewer",
+};
+// UserRoleWide.Admin type: string ← too wide!
+
+// With as const — TypeScript narrows to exact literals
+const UserRole = {
+  Admin: "admin",
+  Editor: "editor",
+  Viewer: "viewer",
+} as const;
+
+// UserRole is now:
+// { readonly Admin: "admin"; readonly Editor: "editor"; readonly Viewer: "viewer" }
+
+// Use keyof typeof to get the key union
+type UserRoleKey = keyof typeof UserRole; // "Admin" | "Editor" | "Viewer"
+
+// Use (typeof X)[keyof typeof X] to get the value union
+type UserRoleValue = (typeof UserRole)[keyof typeof UserRole]; // "admin" | "editor" | "viewer"
+
+// Type-safe function using keyof typeof
+const canEdit = (role: keyof typeof UserRole): boolean => {
+  if (role === "Admin" || role === "Editor") {
+    return true;
+  }
+  return false;
+};
+
+console.log(canEdit("Admin")); // true
+// canEdit("SuperAdmin"); // ❌ Error: not a key of UserRole
+
+// as const on arrays — each element is narrowed and the array becomes readonly
+const DIRECTIONS = ["up", "down", "left", "right"] as const;
+// type: readonly ["up", "down", "left", "right"]
+type Direction = (typeof DIRECTIONS)[number]; // "up" | "down" | "left" | "right"
+```
+
+### Explanation | ব্যাখ্যা
+
+**English:**
+
+- Without `as const`, an object's properties are typed as their general base type (`string`, `number`). With it, they become their exact literal values (`"admin"`, `"editor"`).
+- `as const` also makes every property `readonly` — TypeScript will error if you try to reassign.
+- `keyof typeof obj` gives a union of the **keys** (the property names).
+- `(typeof obj)[keyof typeof obj]` gives a union of the **values** — the standard pattern to derive a value type from a const object without a separate `type` declaration.
+- On arrays, `as const` prevents the array from being widened to `string[]` and enables element type extraction with `[number]`.
+
+**বাংলা:**
+
+- `as const` ছাড়া object-এর property সাধারণ base type (`string`, `number`) হয়। এটা দিলে exact literal value (`"admin"`, `"editor"`) হয়।
+- `as const` প্রতিটি property `readonly`-ও করে — reassign করার চেষ্টা করলে TypeScript error দেবে।
+- `keyof typeof obj` **key**-গুলোর union দেয় (property name)।
+- `(typeof obj)[keyof typeof obj]` **value**-গুলোর union দেয় — আলাদা `type` declaration ছাড়াই const object থেকে value type বের করার standard pattern।
+- Array-এ `as const` দিলে array `string[]`-এ widen হওয়া থেকে রক্ষা পায় এবং `[number]` দিয়ে element type বের করা যায়।
+
+### ⚠️ Common Mistakes
+
+```ts
+// ❌ Wrong: forgetting as const — properties widen to string, value union breaks
+const STATUS = { Active: "active", Inactive: "inactive" };
+type StatusValue = (typeof STATUS)[keyof typeof STATUS]; // string ← useless!
+
+// ✅ Correct: add as const
+const STATUS2 = { Active: "active", Inactive: "inactive" } as const;
+type StatusValue2 = (typeof STATUS2)[keyof typeof STATUS2]; // "active" | "inactive" ✅
+
+// ❌ Wrong: using as const on let — TypeScript will error on reassignment but the
+// wider issue is that 'let' signals the value may change; prefer const + as const
+let role = "admin" as const; // type: "admin" — but you can't reassign anyway
+// role = "editor"; // ❌ Error: 'let' variable is 'readonly "admin"', not assignable
+
+// ✅ Correct: use const with as const for objects and arrays
+const ROLES = ["admin", "editor", "viewer"] as const;
+
+// ❌ Wrong: accessing a value directly without keyof typeof
+function check(role: string) {} // accepts anything — too permissive
+check("god-mode"); // ❌ no compile error, but invalid value
+
+// ✅ Correct: use (typeof obj)[keyof typeof obj] as the parameter type
+const UserRole2 = { Admin: "admin", Editor: "editor" } as const;
+function check2(role: (typeof UserRole2)[keyof typeof UserRole2]) {}
+check2("admin"); // ✅
+// check2("god-mode"); // ❌ Error: not a valid role value
+```
+
+### ⚡ Quick Quiz
+
+Given the object below, write types for the **keys** and **values** using `as const`.
+
+```ts
+const COLORS = {
+  Red: "red",
+  Green: "green",
+  Blue: "blue",
+} as const;
+
+// Your answer:
+type ColorKey = keyof typeof COLORS; // "Red" | "Green" | "Blue"
+type ColorValue = (typeof COLORS)[keyof typeof COLORS]; // "red" | "green" | "blue"
+```
+
+### 🆚 `as const` vs `readonly` vs `Object.freeze()`
+
+| Feature                        | `as const`                    | `readonly` modifier           | `Object.freeze()`             |
+| ------------------------------ | ----------------------------- | ----------------------------- | ----------------------------- |
+| Scope                          | Compile-time only             | Compile-time only             | Runtime (shallow)             |
+| Narrows literals               | ✅ Yes                        | ❌ No                         | ❌ No                         |
+| Makes properties readonly      | ✅ All, recursively           | ✅ Declared property only     | ✅ Shallow (runtime)          |
+| Prevents runtime mutation      | ❌ No (TS only)               | ❌ No (TS only)               | ✅ Yes (shallow)              |
+| Works on arrays                | ✅ `readonly` tuple           | ✅ Per element                | ✅ Shallow                    |
+| Best for...                    | Const maps, route/role tables | Specific object shapes        | Deep-freeze at runtime        |
+
+```ts
+// readonly — one property at a time
+type Config = { readonly host: string; port: number };
+const cfg: Config = { host: "localhost", port: 3000 };
+// cfg.host = "x"; // ❌ Error (compile-time only)
+
+// as const — entire object, recursively, with literal narrowing
+const CFG = { host: "localhost", port: 3000 } as const;
+// CFG.host is type "localhost" — not just string
+// CFG.port is type 3000 — not just number
+
+// Object.freeze — runtime protection (shallow)
+const FROZEN = Object.freeze({ host: "localhost", port: 3000 });
+FROZEN.host = "x"; // ❌ silently fails (or throws in strict mode) — runtime only
+// TypeScript does NOT narrow literals with Object.freeze alone
+```
+
+**`as const` ব্যবহার করুন যখন:** compile-time-এ literal type lock করতে চান, `keyof typeof` বা value union pattern দরকার, বা config/lookup object বানাচ্ছেন।
+**`readonly` ব্যবহার করুন যখন:** interface/type-এর নির্দিষ্ট property mutation থেকে রক্ষা করতে চান।
+**`Object.freeze()` ব্যবহার করুন যখন:** runtime-এ object mutation থেকে রক্ষা করতে চান (যেমন shared config object)।
+
+---
+
 # 🌳 Phase 3 — Safety & Patterns
 
 ---
 
-## 1️⃣9️⃣ Classes 🏛️
+## 2️⃣0️⃣ Classes 🏛️
 
 > **Level:** Intermediate 🌳
 
@@ -2899,7 +3053,7 @@ console.log(acc.owner); // "Alice" (readonly)
 
 ---
 
-## 2️⃣0️⃣ Async/Await & Promise Typing ⚡
+## 2️⃣1️⃣ Async/Await & Promise Typing ⚡
 
 > **Level:** Intermediate 🌳
 
@@ -3060,7 +3214,7 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
 
 ---
 
-## 2️⃣1️⃣ Type Assertion 🧭
+## 2️⃣2️⃣ Type Assertion 🧭
 
 > **File:** `src/typeAssertion.ts` | **Level:** Intermediate 🌳
 
@@ -3189,7 +3343,7 @@ config2.port; // type: number — literal 3000 is gone
 
 ---
 
-## 2️⃣2️⃣ Nullable / undefined / unknown / never 🧯
+## 2️⃣3️⃣ Nullable / undefined / unknown / never 🧯
 
 > **File:** `src/nullableUdefinedNever.ts` | **Level:** Intermediate 🌳
 
@@ -3392,7 +3546,7 @@ function getArea(shape: Shape): number {
 
 ---
 
-## 2️⃣3️⃣ Destructuring 🎯
+## 2️⃣4️⃣ Destructuring 🎯
 
 > **File:** `src/destructuring.ts` | **Level:** Intermediate 🌳
 
@@ -3484,7 +3638,7 @@ console.log(item, count); // "book" 3
 
 ---
 
-## 2️⃣4️⃣ Spread & Rest 🪄
+## 2️⃣5️⃣ Spread & Rest 🪄
 
 > **File:** `src/SpreadAndRest.ts` | **Level:** Intermediate 🌳
 
@@ -3591,7 +3745,7 @@ console.log(mergeArrays([1, 2], [3, 4])); // [1, 2, 3, 4]
 
 ---
 
-## 2️⃣5️⃣ Test & Practice ✅
+## 2️⃣6️⃣ Test & Practice ✅
 
 > **File:** `src/test.ts` | **Level:** All Levels 🎓
 
