@@ -66,13 +66,13 @@ TypeScript/
 
 ## 🧭 Learning Phases at a Glance
 
-| Phase            | Level              | Goal                                                  | Topics                                                                                                                                                                                                                           |
-| ---------------- | ------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives (+ Literal Types, `readonly`, Labeled Tuples), Functions (+ Optional/Default Params, Overloads), `?` Operators                                                                                        |
-| **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias (+ Recursive Types), Interface (+ Array Interface), Union & Intersection (+ Discriminated Unions)                                                                                                                     |
+| Phase            | Level              | Goal                                                  | Topics                                                                                                                                                                                                                                       |
+| ---------------- | ------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** 🌱   | Beginner           | Primitive & non-primitive types, functions, operators | Primitives, Non-Primitives (+ Literal Types, `readonly`, Labeled Tuples), Functions (+ Optional/Default Params, Overloads), `?` Operators                                                                                                    |
+| **Phase 2** 🌿   | Lower-Intermediate | Type modeling, reusability, contracts                 | Type Alias (+ Recursive Types), Interface (+ Array Interface), Union & Intersection (+ Discriminated Unions)                                                                                                                                 |
 | **Phase 2.5** 💡 | Intermediate       | Advanced modeling + decision guides                   | Alias vs Interface, Type Guards, Enums, `keyof`/`typeof`, Generics (+ Generic Constraints, Generic Classes), Utility Types, Conditional Types + `infer`, Mapped Types, Template Literal Types, `satisfies`, Indexed Access Types, `as const` |
-| **Phase 3** 🌳   | Intermediate       | Classes, async patterns, safety & real-world use      | Classes, Async/Await & Promise Typing, Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest                                                                                                                      |
-| **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                                                                                                                                                                              |
+| **Phase 3** 🌳   | Intermediate       | Classes, async patterns, safety & real-world use      | Classes, Async/Await & Promise Typing, Type Assertion, Nullable/Unknown/Never, Destructuring, Spread & Rest                                                                                                                                  |
+| **Phase 4** 🎯   | All levels         | Revise + experiment                                   | Practice challenges                                                                                                                                                                                                                          |
 
 ---
 
@@ -2780,14 +2780,14 @@ type ColorValue = (typeof COLORS)[keyof typeof COLORS]; // "red" | "green" | "bl
 
 ### 🆚 `as const` vs `readonly` vs `Object.freeze()`
 
-| Feature                        | `as const`                    | `readonly` modifier           | `Object.freeze()`             |
-| ------------------------------ | ----------------------------- | ----------------------------- | ----------------------------- |
-| Scope                          | Compile-time only             | Compile-time only             | Runtime (shallow)             |
-| Narrows literals               | ✅ Yes                        | ❌ No                         | ❌ No                         |
-| Makes properties readonly      | ✅ All, recursively           | ✅ Declared property only     | ✅ Shallow (runtime)          |
-| Prevents runtime mutation      | ❌ No (TS only)               | ❌ No (TS only)               | ✅ Yes (shallow)              |
-| Works on arrays                | ✅ `readonly` tuple           | ✅ Per element                | ✅ Shallow                    |
-| Best for...                    | Const maps, route/role tables | Specific object shapes        | Deep-freeze at runtime        |
+| Feature                   | `as const`                    | `readonly` modifier       | `Object.freeze()`      |
+| ------------------------- | ----------------------------- | ------------------------- | ---------------------- |
+| Scope                     | Compile-time only             | Compile-time only         | Runtime (shallow)      |
+| Narrows literals          | ✅ Yes                        | ❌ No                     | ❌ No                  |
+| Makes properties readonly | ✅ All, recursively           | ✅ Declared property only | ✅ Shallow (runtime)   |
+| Prevents runtime mutation | ❌ No (TS only)               | ❌ No (TS only)           | ✅ Yes (shallow)       |
+| Works on arrays           | ✅ `readonly` tuple           | ✅ Per element            | ✅ Shallow             |
+| Best for...               | Const maps, route/role tables | Specific object shapes    | Deep-freeze at runtime |
 
 ```ts
 // readonly — one property at a time
